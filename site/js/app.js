@@ -3,6 +3,7 @@
 import Sortable from "https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/modular/sortable.esm.js";
 import { filesToPages, createBlankPage, compareNames } from "./sources.js";
 import { buildBook } from "./build.js";
+import { t, setLang, getLang } from "./i18n.js";
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -19,6 +20,7 @@ const els = {
   btnPreview: $("#btn-preview"),
   btnPanel: $("#btn-panel"),
   btnTheme: $("#btn-theme"),
+  btnLang: $("#btn-lang"),
   progress: $("#progress"),
   progressBar: $("#progress-bar"),
   progressText: $("#progress-text"),
@@ -30,20 +32,19 @@ let pages = [];
 let busy = false;
 let sortState = { key: null, desc: false };
 
-// ---- 画面の好み（テーマ・パネル位置）----
+// ---- 画面の好み（テーマ・パネル位置・言語）----
 // index.html の <head> でも同じキーを読み, 描画前に反映している.
 
 const PREFS_KEY = "seihon:prefs";
 const THEMES = ["auto", "light", "dark"];
-const THEME_LABELS = { auto: "テーマ：自動", light: "テーマ：ライト", dark: "テーマ：ダーク" };
 
 const prefs = loadPrefs();
 
 function loadPrefs() {
   try {
-    return { theme: "auto", panel: "right", ...JSON.parse(localStorage.getItem(PREFS_KEY) || "{}") };
+    return { theme: "auto", panel: "right", lang: "ja", ...JSON.parse(localStorage.getItem(PREFS_KEY) || "{}") };
   } catch {
-    return { theme: "auto", panel: "right" };
+    return { theme: "auto", panel: "right", lang: "ja" };
   }
 }
 
@@ -52,8 +53,15 @@ function applyPrefs() {
   if (prefs.theme === "auto") delete root.dataset.theme;
   else root.dataset.theme = prefs.theme;
   root.dataset.panel = prefs.panel;
-  els.btnTheme.textContent = THEME_LABELS[prefs.theme];
-  els.btnPanel.textContent = prefs.panel === "right" ? "設定を左へ" : "設定を右へ";
+  if (prefs.lang !== getLang()) {
+    setLang(prefs.lang);
+    render();
+  }
+  els.btnTheme.textContent = t(`header.theme.${prefs.theme}`);
+  els.btnPanel.textContent = t(prefs.panel === "right" ? "header.panelLeft" : "header.panelRight");
+  // 言語ボタンには切り替え先の言語名を出す.
+  els.btnLang.textContent = t("header.lang");
+  els.btnLang.lang = prefs.lang === "ja" ? "en" : "ja";
   try {
     localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
   } catch { /* 保存できない環境では, その場限りの設定になる */ }
@@ -69,21 +77,23 @@ els.btnPanel.addEventListener("click", () => {
   applyPrefs();
 });
 
-applyPrefs();
+els.btnLang.addEventListener("click", () => {
+  prefs.lang = prefs.lang === "ja" ? "en" : "ja";
+  applyPrefs();
+});
 
 // ---- ページ一覧の表示 ----
 
 function render() {
   els.grid.replaceChildren(...pages.map(pageItem));
-  els.count.textContent = `${pages.length} ページ`;
+  els.count.textContent = t("pages.count", { n: pages.length });
   els.hint.hidden = pages.length === 0;
   els.btnBuild.disabled = busy || pages.length === 0;
   els.btnPreview.disabled = busy || pages.length === 0;
   for (const btn of els.sortButtons) {
     const active = btn.dataset.sort === sortState.key;
     btn.setAttribute("aria-pressed", String(active));
-    btn.dataset.label ??= btn.textContent;
-    btn.textContent = btn.dataset.label + (active ? (sortState.desc ? " ▼" : " ▲") : "");
+    btn.textContent = t(`sort.${btn.dataset.sort}`) + (active ? (sortState.desc ? " ▼" : " ▲") : "");
   }
 }
 
@@ -96,6 +106,7 @@ function pageItem(page, index) {
   thumb.className = "page-thumb";
   if (page.kind === "blank") {
     thumb.classList.add("is-blank");
+    thumb.dataset.label = t("page.blank");
   } else if (page.thumb) {
     const img = document.createElement("img");
     img.src = page.thumb;
@@ -103,6 +114,7 @@ function pageItem(page, index) {
     thumb.append(img);
   } else {
     thumb.classList.add("is-loading");
+    thumb.dataset.label = t("page.loading");
   }
 
   const no = document.createElement("span");
@@ -113,38 +125,38 @@ function pageItem(page, index) {
     pages = pages.filter((p) => p !== page);
     render();
   });
-  remove.title = "このページを削除";
-  remove.setAttribute("aria-label", `${index + 1}ページ目を削除`);
+  remove.title = t("page.remove");
+  remove.setAttribute("aria-label", t("page.removeLabel", { n: index + 1 }));
 
   thumb.append(no, remove);
   if (page.marked) {
     const ribbon = document.createElement("span");
     ribbon.className = "ribbon";
-    ribbon.title = "注目";
+    ribbon.title = t("page.mark");
     thumb.append(ribbon);
   }
 
   const name = document.createElement("span");
   name.className = "page-name";
-  name.textContent = page.name;
-  name.title = page.name;
+  name.textContent = page.kind === "blank" ? t("page.blank") : page.name;
+  name.title = name.textContent;
 
   // 見出し（目次）と注目（しおり）の切り替え
   const tools = document.createElement("div");
   tools.className = "page-tools";
-  const tocBtn = button("見出し", "tool-btn is-toc", () => {
+  const tocBtn = button(t("page.toc"), "tool-btn is-toc", () => {
     page.toc = page.toc === null ? "" : null;
     render();
     if (page.toc !== null) els.grid.querySelector(`[data-id="${page.id}"] .toc-input`)?.focus();
   });
   tocBtn.setAttribute("aria-pressed", String(page.toc !== null));
-  tocBtn.title = "目次に見出しを載せる";
-  const markBtn = button("注目", "tool-btn is-mark", () => {
+  tocBtn.title = t("page.tocTitle");
+  const markBtn = button(t("page.mark"), "tool-btn is-mark", () => {
     page.marked = !page.marked;
     render();
   });
   markBtn.setAttribute("aria-pressed", String(page.marked));
-  markBtn.title = "製本者のしおりを付ける";
+  markBtn.title = t("page.markTitle");
   tools.append(tocBtn, markBtn);
 
   li.append(thumb, name, tools);
@@ -153,9 +165,9 @@ function pageItem(page, index) {
     const input = document.createElement("input");
     input.type = "text";
     input.className = "toc-input";
-    input.placeholder = "目次の見出し";
+    input.placeholder = t("page.tocPlaceholder");
     input.value = page.toc;
-    input.setAttribute("aria-label", `${index + 1}ページ目の見出し`);
+    input.setAttribute("aria-label", t("page.tocLabel", { n: index + 1 }));
     // 入力中は再描画しない（フォーカスが外れないように）.
     input.addEventListener("input", () => { page.toc = input.value; });
     li.append(input);
@@ -230,16 +242,16 @@ for (const btn of els.sortButtons) {
 async function addFiles(fileList) {
   const files = [...fileList];
   if (files.length === 0) return;
-  showResult("読み込み中…");
+  showResult(t("status.loading"));
   try {
     const { pages: added, skipped } = await filesToPages(files, updateThumb);
     pages.push(...added);
     sortState = { key: null, desc: false };
     render();
-    showResult(skipped.length ? `読み込めないファイルがありました：${skipped.join(", ")}` : "", skipped.length > 0);
+    showResult(skipped.length ? t("status.skipped", { files: skipped.join(", ") }) : "", skipped.length > 0);
   } catch (err) {
     console.error(err);
-    showResult(`ファイルを読み込めませんでした（${err.message}）`, true);
+    showResult(t("status.loadError", { message: err.message }), true);
   }
 }
 
@@ -281,7 +293,7 @@ $("#btn-blank").addEventListener("click", () => {
 });
 
 $("#btn-clear").addEventListener("click", () => {
-  if (pages.length && confirm("すべてのページを削除しますか？")) {
+  if (pages.length && confirm(t("pages.clearConfirm"))) {
     pages = [];
     render();
   }
@@ -292,7 +304,7 @@ $("#btn-clear").addEventListener("click", () => {
 function readSettings() {
   const data = new FormData(els.form);
   return {
-    title: String(data.get("title")).trim() || "無題の本",
+    title: String(data.get("title")).trim() || t("settings.untitled"),
     direction: data.get("direction"),
     layout: data.get("layout"),
     coverSingle: data.has("coverSingle"),
@@ -333,10 +345,10 @@ els.btnBuild.addEventListener("click", async () => {
   try {
     const { settings, blob } = await make();
     download(blob, `${safeFileName(settings.title)}.html`);
-    showResult(`できあがりました（${formatSize(blob.size)}）. `);
+    showResult(t("status.done", { size: formatSize(blob.size) }));
   } catch (err) {
     console.error(err);
-    showResult(`製本に失敗しました（${err.message}）`, true);
+    showResult(t("status.buildError", { message: err.message }), true);
   }
 });
 
@@ -349,11 +361,11 @@ els.btnPreview.addEventListener("click", async () => {
     if (tab) tab.location.href = url;
     else window.open(url, "_blank");
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    showResult(`プレビューを開きました（${formatSize(blob.size)}）. `);
+    showResult(t("status.previewOpened", { size: formatSize(blob.size) }));
   } catch (err) {
     tab?.close();
     console.error(err);
-    showResult(`プレビューに失敗しました（${err.message}）`, true);
+    showResult(t("status.previewError", { message: err.message }), true);
   }
 });
 
@@ -385,4 +397,5 @@ function formatSize(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+applyPrefs();
 render();

@@ -5,6 +5,7 @@
 
 import { renderPage } from "./sources.js";
 import { encryptText } from "./crypto.js";
+import { t, getLang } from "./i18n.js";
 
 const READER_FILES = {
   template: "reader/template.html",
@@ -19,7 +20,7 @@ async function loadReader() {
     const entries = await Promise.all(
       Object.entries(READER_FILES).map(async ([key, path]) => {
         const res = await fetch(new URL(`../${path}`, import.meta.url));
-        if (!res.ok) throw new Error(`${path} を読み込めませんでした`);
+        if (!res.ok) throw new Error(`${path} (HTTP ${res.status})`);
         return [key, await res.text()];
       }),
     );
@@ -36,7 +37,7 @@ export async function buildBook(pages, settings, onProgress = () => {}) {
   let lastSize = null;
 
   for (let i = 0; i < total; i++) {
-    onProgress(i, total, `ページを変換中（${i + 1} / ${total}）`);
+    onProgress(i, total, t("status.converting", { i: i + 1, n: total }));
     const canvas = await renderPage(pages[i], settings.maxEdge, lastSize);
     lastSize = { width: canvas.width, height: canvas.height };
     encoded.push({
@@ -59,6 +60,7 @@ export async function buildBook(pages, settings, onProgress = () => {}) {
 
   const book = {
     v: 2,
+    lang: getLang(), // 読む画面の表示言語
     // 読み手のしおりを本ごとに保存するための識別子.
     id: crypto.randomUUID?.() ?? String(Date.now()) + Math.random().toString(16).slice(2),
     title: settings.title,
@@ -69,13 +71,13 @@ export async function buildBook(pages, settings, onProgress = () => {}) {
   };
 
   if (settings.password) {
-    onProgress(total, total, "暗号化中");
+    onProgress(total, total, t("status.encrypting"));
     book.encrypted = await encryptText(JSON.stringify(content), settings.password);
   } else {
     book.content = content;
   }
 
-  onProgress(total, total, "HTMLを作成中");
+  onProgress(total, total, t("status.writing"));
   return fillTemplate(reader, book);
 }
 

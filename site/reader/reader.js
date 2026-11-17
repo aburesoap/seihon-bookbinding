@@ -6,6 +6,86 @@
   var book = JSON.parse(document.getElementById("book-data").textContent);
   var rtl = book.direction === "rtl";
 
+  // ---- 表示言語（製本したときの言語）----
+  // 表記のきまり：ひとかたまりの文章の末尾にはピリオドを付けない.
+
+  var MESSAGES = {
+    ja: {
+      toc: "目次・しおり",
+      tocKey: "目次・しおり（T）",
+      bookmark: "しおり",
+      bookmarkAdd: "しおりを挟む（B）",
+      bookmarkRemove: "しおりを外す（B）",
+      layout: "見開き／単ページの切り替え",
+      theme: "テーマの切り替え",
+      "theme.auto": "テーマ：自動",
+      "theme.light": "テーマ：ライト",
+      "theme.dark": "テーマ：ダーク",
+      fullscreen: "全画面表示",
+      fullscreenKey: "全画面表示（F）",
+      left: "左のページへ",
+      right: "右のページへ",
+      seek: "ページ移動",
+      close: "閉じる",
+      page: "{n}ページ",
+      sectionToc: "目次",
+      sectionMarks: "注目ページ",
+      sectionMine: "あなたのしおり",
+      mineEmpty: "しおりはありません. 上のしおりボタンで, 表示中のページに挟めます",
+      mark: "注目",
+      removeBookmark: "{n}ページのしおりを外す",
+      locked: "この本はパスワードで保護されています",
+      password: "パスワード",
+      open: "開く",
+      wrongPassword: "パスワードが違います",
+    },
+    en: {
+      toc: "Contents and bookmarks",
+      tocKey: "Contents and bookmarks (T)",
+      bookmark: "Bookmark",
+      bookmarkAdd: "Add a bookmark (B)",
+      bookmarkRemove: "Remove the bookmark (B)",
+      layout: "Switch between spread and single page",
+      theme: "Switch theme",
+      "theme.auto": "Theme: Auto",
+      "theme.light": "Theme: Light",
+      "theme.dark": "Theme: Dark",
+      fullscreen: "Full screen",
+      fullscreenKey: "Full screen (F)",
+      left: "Page to the left",
+      right: "Page to the right",
+      seek: "Go to page",
+      close: "Close",
+      page: "Page {n}",
+      sectionToc: "Contents",
+      sectionMarks: "Marked pages",
+      sectionMine: "Your bookmarks",
+      mineEmpty: "No bookmarks yet. Use the bookmark button above to add one to the current page",
+      mark: "Marked",
+      removeBookmark: "Remove the bookmark on page {n}",
+      locked: "This book is protected with a password",
+      password: "Password",
+      open: "Open",
+      wrongPassword: "Wrong password",
+    },
+  };
+  var lang = MESSAGES[book.lang] ? book.lang : "ja";
+  document.documentElement.lang = lang;
+
+  function t(key, n) {
+    var text = MESSAGES[lang][key] || MESSAGES.ja[key] || key;
+    return text.replace("{n}", n);
+  }
+
+  function translatePage() {
+    var nodes = document.querySelectorAll("[data-i18n]");
+    for (var i = 0; i < nodes.length; i++) nodes[i].textContent = t(nodes[i].getAttribute("data-i18n"));
+    ["title", "aria-label", "placeholder"].forEach(function (attr) {
+      var list = document.querySelectorAll("[data-i18n-" + attr + "]");
+      for (var j = 0; j < list.length; j++) list[j].setAttribute(attr, t(list[j].getAttribute("data-i18n-" + attr)));
+    });
+  }
+
   var el = {
     book: document.getElementById("book"),
     stage: document.getElementById("stage"),
@@ -116,7 +196,7 @@
       page.style.height = size[i].h + "px";
       var img = document.createElement("img");
       img.src = pages[pageIndex].src;
-      img.alt = (pageIndex + 1) + "ページ";
+      img.alt = t("page", pageIndex + 1);
       img.draggable = false;
       page.appendChild(img);
       page.appendChild(ribbonsFor(pageIndex));
@@ -132,8 +212,8 @@
   function ribbonsFor(pageIndex) {
     var box = document.createElement("div");
     box.className = "ribbons";
-    if (marks.indexOf(pageIndex) >= 0) box.appendChild(ribbon("is-author", "注目"));
-    if (bookmarks.indexOf(pageIndex) >= 0) box.appendChild(ribbon("is-reader", "しおり"));
+    if (marks.indexOf(pageIndex) >= 0) box.appendChild(ribbon("is-author", t("mark")));
+    if (bookmarks.indexOf(pageIndex) >= 0) box.appendChild(ribbon("is-reader", t("bookmark")));
     return box;
   }
 
@@ -169,7 +249,7 @@
 
     var marked = group.some(function (i) { return bookmarks.indexOf(i) >= 0; });
     el.bookmark.setAttribute("aria-pressed", String(marked));
-    el.bookmark.title = marked ? "しおりを外す（B）" : "しおりを挟む（B）";
+    el.bookmark.title = t(marked ? "bookmarkRemove" : "bookmarkAdd");
 
     if (!el.drawer.hidden) renderDrawer();
   }
@@ -270,25 +350,25 @@
       // 今いる章（現在のページ以前で最後の見出し）を強調する.
       var currentEntry = null;
       toc.forEach(function (entry) { if (entry.page <= group[group.length - 1]) currentEntry = entry; });
-      sections.push(section("目次", toc.map(function (entry) {
+      sections.push(section(t("sectionToc"), toc.map(function (entry) {
         return item(entry.title, entry.page, null, entry === currentEntry);
       })));
     }
 
     if (marks.length) {
-      sections.push(section("注目ページ", marks.map(function (i) {
-        return item((i + 1) + "ページ", i, "is-author", group.indexOf(i) >= 0);
+      sections.push(section(t("sectionMarks"), marks.map(function (i) {
+        return item(t("page", i + 1), i, "is-author", group.indexOf(i) >= 0);
       })));
     }
 
     var mine = bookmarks.map(function (i) {
-      var row = item((i + 1) + "ページ", i, "is-reader", group.indexOf(i) >= 0);
+      var row = item(t("page", i + 1), i, "is-reader", group.indexOf(i) >= 0);
       var remove = document.createElement("button");
       remove.type = "button";
       remove.className = "drawer-remove";
       remove.textContent = "×";
-      remove.title = "このしおりを外す";
-      remove.setAttribute("aria-label", (i + 1) + "ページのしおりを外す");
+      remove.title = t("removeBookmark", i + 1);
+      remove.setAttribute("aria-label", t("removeBookmark", i + 1));
       remove.addEventListener("click", function () {
         bookmarks = bookmarks.filter(function (b) { return b !== i; });
         saveBookmarks();
@@ -298,7 +378,7 @@
       row.appendChild(remove);
       return row;
     });
-    sections.push(section("あなたのしおり", mine, "しおりはありません. 上のしおりボタンで, 表示中のページに挟めます. "));
+    sections.push(section(t("sectionMine"), mine, t("mineEmpty")));
 
     el.drawerBody.replaceChildren.apply(el.drawerBody, sections);
   }
@@ -352,7 +432,6 @@
   // ---- テーマ（自動 → ライト → ダーク）----
 
   var THEMES = ["auto", "light", "dark"];
-  var THEME_LABELS = { auto: "テーマ：自動", light: "テーマ：ライト", dark: "テーマ：ダーク" };
 
   function currentTheme() {
     return document.documentElement.dataset.theme || "auto";
@@ -361,7 +440,7 @@
   function applyTheme(theme) {
     if (theme === "auto") delete document.documentElement.dataset.theme;
     else document.documentElement.dataset.theme = theme;
-    el.theme.title = THEME_LABELS[theme];
+    el.theme.title = t("theme." + theme);
     storage.set(THEME_KEY, theme === "auto" ? null : theme);
   }
 
@@ -480,7 +559,7 @@
         el.lock.hidden = true;
         start(content);
       }, function () {
-        el.lockError.textContent = "パスワードが違います. ";
+        el.lockError.textContent = t("wrongPassword");
         el.lockError.hidden = false;
         el.lockInput.select();
       });
@@ -489,7 +568,7 @@
 
   function decrypt(enc, password) {
     var subtle = window.crypto && window.crypto.subtle;
-    if (!subtle) return Promise.reject(new Error("このブラウザでは復号できません"));
+    if (!subtle) return Promise.reject(new Error("Web Crypto API is not available"));
     var encoder = new TextEncoder();
     return subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveKey"])
       .then(function (material) {
@@ -530,6 +609,7 @@
     relayout();
   }
 
+  translatePage();
   applyTheme(currentTheme());
   if (book.encrypted) unlock();
   else start(book.content || book.pages);

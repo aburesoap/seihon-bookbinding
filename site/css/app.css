@@ -217,13 +217,10 @@ button, input, select { font: inherit; color: inherit; }
   object-fit: contain;
   pointer-events: none;
 }
-.page-thumb.is-loading::after {
-  content: "読み込み中";
-  color: var(--muted);
-  font-size: 12px;
-}
+/* 「読み込み中」「白紙」の文字は, 言語に合わせてJSが data-label に入れる */
+.page-thumb.is-loading::after,
 .page-thumb.is-blank::after {
-  content: "白紙";
+  content: attr(data-label);
   color: var(--muted);
   font-size: 12px;
 }
