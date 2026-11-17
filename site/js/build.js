@@ -48,8 +48,19 @@ export async function buildBook(pages, settings, onProgress = () => {}) {
     canvas.width = canvas.height = 0;
   }
 
+  // 本の中身. パスワードがあるときは, これをまとめて暗号化する.
+  const content = {
+    pages: encoded,
+    toc: pages
+      .map((page, i) => ({ page: i, title: (page.toc ?? "").trim() }))
+      .filter((entry) => entry.title),
+    marks: pages.flatMap((page, i) => (page.marked ? [i] : [])),
+  };
+
   const book = {
-    v: 1,
+    v: 2,
+    // 読み手のしおりを本ごとに保存するための識別子.
+    id: crypto.randomUUID?.() ?? String(Date.now()) + Math.random().toString(16).slice(2),
     title: settings.title,
     direction: settings.direction,
     layout: settings.layout,
@@ -59,9 +70,9 @@ export async function buildBook(pages, settings, onProgress = () => {}) {
 
   if (settings.password) {
     onProgress(total, total, "暗号化中");
-    book.encrypted = await encryptText(JSON.stringify(encoded), settings.password);
+    book.encrypted = await encryptText(JSON.stringify(content), settings.password);
   } else {
-    book.pages = encoded;
+    book.content = content;
   }
 
   onProgress(total, total, "HTMLを作成中");

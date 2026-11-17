@@ -13,17 +13,44 @@
     label: document.getElementById("page-label"),
     left: document.getElementById("btn-left"),
     right: document.getElementById("btn-right"),
+    toc: document.getElementById("btn-toc"),
+    bookmark: document.getElementById("btn-bookmark"),
     layout: document.getElementById("btn-layout"),
+    theme: document.getElementById("btn-theme"),
     fullscreen: document.getElementById("btn-fullscreen"),
+    drawer: document.getElementById("drawer"),
+    drawerBody: document.getElementById("drawer-body"),
+    drawerBackdrop: document.getElementById("drawer-backdrop"),
+    drawerClose: document.getElementById("btn-drawer-close"),
     lock: document.getElementById("lock"),
     lockInput: document.getElementById("lock-input"),
     lockError: document.getElementById("lock-error"),
   };
 
   var pages = [];        // [{ src, w, h }]
+  var toc = [];          // 製本者が付けた目次 [{ page, title }]
+  var marks = [];        // 製本者が付けた「注目」のページ番号
+  var bookmarks = [];    // 読み手が挟んだしおりのページ番号
   var groups = [];       // 一度に表示するページ番号のまとまり（見開きなら2つずつ）
   var current = 0;       // 表示中のまとまりの先頭のページ番号
   var userLayout = null; // 利用者が切り替えた表示方法（null なら本の設定どおり）
+
+  // ---- 保存（使えない環境では, その場限りになる）----
+
+  var storage = {
+    get: function (key) {
+      try { return localStorage.getItem(key); } catch (e) { return null; }
+    },
+    set: function (key, value) {
+      try {
+        if (value === null) localStorage.removeItem(key);
+        else localStorage.setItem(key, value);
+      } catch (e) { /* 何もしない */ }
+    },
+  };
+
+  var BOOKMARK_KEY = "seihon:bookmarks:" + (book.id || book.title);
+  var THEME_KEY = "seihon:reader-theme";
 
   // ---- 表示方法の決定 ----
 
@@ -55,12 +82,16 @@
     return 0;
   }
 
+  function currentGroup() {
+    return groups[groupIndexOf(current)] || [];
+  }
+
   // ---- 描画 ----
 
   function relayout() {
     var spread = isSpread();
     groups = makeGroups(pages.length, spread);
-    el.layout.textContent = spread ? "単ページ" : "見開き";
+    el.book.classList.toggle("is-spread", spread);
     el.slider.max = Math.max(0, groups.length - 1);
     show(groupIndexOf(current), null);
   }
@@ -88,6 +119,7 @@
       img.alt = (pageIndex + 1) + "ページ";
       img.draggable = false;
       page.appendChild(img);
+      page.appendChild(ribbonsFor(pageIndex));
       spread.appendChild(page);
     });
     el.stage.replaceChildren(spread);
@@ -95,6 +127,21 @@
     updateControls(groupIndex);
     preload(groupIndex);
     saveLocation();
+  }
+
+  function ribbonsFor(pageIndex) {
+    var box = document.createElement("div");
+    box.className = "ribbons";
+    if (marks.indexOf(pageIndex) >= 0) box.appendChild(ribbon("is-author", "注目"));
+    if (bookmarks.indexOf(pageIndex) >= 0) box.appendChild(ribbon("is-reader", "しおり"));
+    return box;
+  }
+
+  function ribbon(kind, title) {
+    var span = document.createElement("span");
+    span.className = "ribbon " + kind;
+    span.title = title;
+    return span;
   }
 
   // まとまり内のページの高さをそろえ, ステージに収まる大きさを計算する.
@@ -119,6 +166,12 @@
     var atEnd = groupIndex === groups.length - 1;
     el.left.disabled = rtl ? atEnd : atStart;
     el.right.disabled = rtl ? atStart : atEnd;
+
+    var marked = group.some(function (i) { return bookmarks.indexOf(i) >= 0; });
+    el.bookmark.setAttribute("aria-pressed", String(marked));
+    el.bookmark.title = marked ? "しおりを外す（B）" : "しおりを挟む（B）";
+
+    if (!el.drawer.hidden) renderDrawer();
   }
 
   function preload(groupIndex) {
@@ -143,6 +196,15 @@
   function goNext() { rtl ? goLeft() : goRight(); }
   function goPrev() { rtl ? goRight() : goLeft(); }
 
+  function goToPage(pageIndex) {
+    var g = groupIndexOf(pageIndex);
+    var now = groupIndexOf(current);
+    if (g === now) return;
+    // 先へ進むときは, 読む向きに合わせてめくる.
+    var forward = g > now;
+    show(g, forward === rtl ? "left" : "right");
+  }
+
   // URLの #p=番号 で開いているページを覚えておく（再読み込みや共有のため）.
   function saveLocation() {
     try {
@@ -153,6 +215,154 @@
   function loadLocation() {
     var match = /p=(\d+)/.exec(location.hash);
     return match ? Math.max(0, Math.min(pages.length - 1, Number(match[1]) - 1)) : 0;
+  }
+
+  // ---- 読み手のしおり ----
+
+  function loadBookmarks() {
+    try {
+      var list = JSON.parse(storage.get(BOOKMARK_KEY) || "[]");
+      return list.filter(function (i) { return typeof i === "number" && i >= 0 && i < pages.length; });
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveBookmarks() {
+    bookmarks.sort(function (a, b) { return a - b; });
+    storage.set(BOOKMARK_KEY, bookmarks.length ? JSON.stringify(bookmarks) : null);
+  }
+
+  // 表示中のページにしおりがあれば外し, なければ先頭のページに挟む.
+  function toggleBookmark() {
+    var group = currentGroup();
+    var has = group.filter(function (i) { return bookmarks.indexOf(i) >= 0; });
+    if (has.length) {
+      bookmarks = bookmarks.filter(function (i) { return has.indexOf(i) < 0; });
+    } else {
+      bookmarks.push(group[0]);
+    }
+    saveBookmarks();
+    show(groupIndexOf(current), null);
+  }
+
+  // ---- 目次・しおり一覧 ----
+
+  function openDrawer() {
+    renderDrawer();
+    el.drawer.hidden = false;
+    el.drawerBackdrop.hidden = false;
+    el.toc.setAttribute("aria-expanded", "true");
+    el.drawerClose.focus();
+  }
+
+  function closeDrawer() {
+    el.drawer.hidden = true;
+    el.drawerBackdrop.hidden = true;
+    el.toc.setAttribute("aria-expanded", "false");
+  }
+
+  function renderDrawer() {
+    var group = currentGroup();
+    var sections = [];
+
+    if (toc.length) {
+      // 今いる章（現在のページ以前で最後の見出し）を強調する.
+      var currentEntry = null;
+      toc.forEach(function (entry) { if (entry.page <= group[group.length - 1]) currentEntry = entry; });
+      sections.push(section("目次", toc.map(function (entry) {
+        return item(entry.title, entry.page, null, entry === currentEntry);
+      })));
+    }
+
+    if (marks.length) {
+      sections.push(section("注目ページ", marks.map(function (i) {
+        return item((i + 1) + "ページ", i, "is-author", group.indexOf(i) >= 0);
+      })));
+    }
+
+    var mine = bookmarks.map(function (i) {
+      var row = item((i + 1) + "ページ", i, "is-reader", group.indexOf(i) >= 0);
+      var remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "drawer-remove";
+      remove.textContent = "×";
+      remove.title = "このしおりを外す";
+      remove.setAttribute("aria-label", (i + 1) + "ページのしおりを外す");
+      remove.addEventListener("click", function () {
+        bookmarks = bookmarks.filter(function (b) { return b !== i; });
+        saveBookmarks();
+        show(groupIndexOf(current), null);
+        renderDrawer();
+      });
+      row.appendChild(remove);
+      return row;
+    });
+    sections.push(section("あなたのしおり", mine, "しおりはありません. 上のしおりボタンで, 表示中のページに挟めます. "));
+
+    el.drawerBody.replaceChildren.apply(el.drawerBody, sections);
+  }
+
+  function section(heading, items, emptyText) {
+    var box = document.createElement("section");
+    box.className = "drawer-section";
+    var h = document.createElement("h2");
+    h.textContent = heading;
+    box.appendChild(h);
+    if (items.length === 0 && emptyText) {
+      var p = document.createElement("p");
+      p.className = "drawer-empty";
+      p.textContent = emptyText;
+      box.appendChild(p);
+    }
+    items.forEach(function (node) { box.appendChild(node); });
+    return box;
+  }
+
+  function item(text, pageIndex, dotKind, isCurrent) {
+    var row = document.createElement("div");
+    row.className = "drawer-item";
+    var link = document.createElement("button");
+    link.type = "button";
+    link.className = "drawer-link" + (isCurrent ? " is-current" : "");
+    if (dotKind) {
+      var dot = document.createElement("span");
+      dot.className = "dot " + dotKind;
+      link.appendChild(dot);
+    }
+    var label = document.createElement("span");
+    label.className = "label";
+    label.textContent = text;
+    link.appendChild(label);
+    if (book.showPageNumber && !dotKind) {
+      var no = document.createElement("span");
+      no.className = "no";
+      no.textContent = pageIndex + 1;
+      link.appendChild(no);
+    }
+    link.addEventListener("click", function () {
+      goToPage(pageIndex);
+      // 狭い画面では, 移動したら一覧を閉じてページを見せる.
+      if (window.innerWidth < 700) closeDrawer();
+    });
+    row.appendChild(link);
+    return row;
+  }
+
+  // ---- テーマ（自動 → ライト → ダーク）----
+
+  var THEMES = ["auto", "light", "dark"];
+  var THEME_LABELS = { auto: "テーマ：自動", light: "テーマ：ライト", dark: "テーマ：ダーク" };
+
+  function currentTheme() {
+    return document.documentElement.dataset.theme || "auto";
+  }
+
+  function applyTheme(theme) {
+    if (theme === "auto") delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = theme;
+    el.theme.title = THEME_LABELS[theme];
+    storage.set(THEME_KEY, theme === "auto" ? null : theme);
   }
 
   // ---- 操作 ----
@@ -168,13 +378,24 @@
 
     el.label.hidden = !book.showPageNumber;
 
+    el.toc.addEventListener("click", function () {
+      el.drawer.hidden ? openDrawer() : closeDrawer();
+    });
+    el.drawerClose.addEventListener("click", closeDrawer);
+    el.drawerBackdrop.addEventListener("click", closeDrawer);
+
+    el.bookmark.addEventListener("click", toggleBookmark);
+
     el.layout.addEventListener("click", function () {
       userLayout = isSpread() ? "single" : "spread";
       relayout();
     });
 
+    el.theme.addEventListener("click", function () {
+      applyTheme(THEMES[(THEMES.indexOf(currentTheme()) + 1) % THEMES.length]);
+    });
+
     if (document.fullscreenEnabled) {
-      el.fullscreen.textContent = "全画面";
       el.fullscreen.addEventListener("click", toggleFullscreen);
     } else {
       el.fullscreen.hidden = true;
@@ -182,6 +403,7 @@
 
     document.addEventListener("keydown", function (event) {
       if (event.target instanceof HTMLInputElement && event.target.type !== "range") return;
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
       switch (event.key) {
         case "ArrowLeft": goLeft(); break;
         case "ArrowRight": goRight(); break;
@@ -190,6 +412,9 @@
         case "Home": show(0, null); break;
         case "End": show(groups.length - 1, null); break;
         case "f": toggleFullscreen(); break;
+        case "b": toggleBookmark(); break;
+        case "t": el.drawer.hidden ? openDrawer() : closeDrawer(); break;
+        case "Escape": closeDrawer(); break;
         default: return;
       }
       event.preventDefault();
@@ -251,9 +476,9 @@
     el.lock.addEventListener("submit", function (event) {
       event.preventDefault();
       el.lockError.hidden = true;
-      decrypt(book.encrypted, el.lockInput.value).then(function (list) {
+      decrypt(book.encrypted, el.lockInput.value).then(function (content) {
         el.lock.hidden = true;
-        start(list);
+        start(content);
       }, function () {
         el.lockError.textContent = "パスワードが違います. ";
         el.lockError.hidden = false;
@@ -293,13 +518,19 @@
 
   // ---- 開始 ----
 
-  function start(list) {
-    pages = list;
+  function start(content) {
+    // 初期の形式（ページの配列だけ）にも対応しておく.
+    if (Array.isArray(content)) content = { pages: content };
+    pages = content.pages;
+    toc = content.toc || [];
+    marks = content.marks || [];
+    bookmarks = loadBookmarks();
     current = loadLocation();
     bindControls();
     relayout();
   }
 
+  applyTheme(currentTheme());
   if (book.encrypted) unlock();
-  else start(book.pages);
+  else start(book.content || book.pages);
 })();

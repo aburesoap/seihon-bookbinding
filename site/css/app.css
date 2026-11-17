@@ -6,16 +6,18 @@
   --text: #2b2a28;
   --muted: #76726b;
   --line: #dedad2;
-  --accent: #3d5a80;
+  --accent: #2f7ab0;
   --accent-text: #ffffff;
+  --mark: #c98a2b;
   --danger: #a33a3a;
   --radius: 8px;
   --font: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
+/* ダークテーマ. 端末の設定に従い, 手動で選んだ場合はそちらを優先する. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #1c1b1a;
     --surface: #262523;
     --text: #e9e6e0;
@@ -23,8 +25,22 @@
     --line: #3a3835;
     --accent: #8fb0d8;
     --accent-text: #14181d;
+    --mark: #e0b060;
     --danger: #e08080;
+    color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #1c1b1a;
+  --surface: #262523;
+  --text: #e9e6e0;
+  --muted: #a19c93;
+  --line: #3a3835;
+  --accent: #8fb0d8;
+  --accent-text: #14181d;
+  --mark: #e0b060;
+  --danger: #e08080;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -47,6 +63,16 @@ button, input, select { font: inherit; color: inherit; }
   margin: 0 auto;
   padding: 28px 20px 8px;
 }
+.header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.header-actions { display: flex; gap: 6px; }
+.btn-small { padding: 5px 10px; font-size: 13px; }
+
 .logo {
   margin: 0;
   font-size: 26px;
@@ -83,8 +109,15 @@ button, input, select { font: inherit; color: inherit; }
   gap: 24px;
   align-items: start;
 }
+/* 設定パネルを左に置く */
+:root[data-panel="left"] .workbench { grid-template-columns: 320px minmax(0, 1fr); }
+:root[data-panel="left"] .settings-panel { order: -1; }
+
 @media (max-width: 860px) {
-  .workbench { grid-template-columns: minmax(0, 1fr); }
+  .workbench,
+  :root[data-panel="left"] .workbench { grid-template-columns: minmax(0, 1fr); }
+  :root[data-panel="left"] .settings-panel { order: 0; }
+  #btn-panel { display: none; }
 }
 
 /* ---- ドロップエリア ---- */
@@ -123,7 +156,31 @@ button, input, select { font: inherit; color: inherit; }
 #page-count { font-weight: 600; }
 .toolbar-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 
-.hint { margin: 6px 0 10px; color: var(--muted); font-size: 13px; }
+/* 並び替え */
+.sort-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+.sort-label { font-size: 13px; color: var(--muted); margin-right: 2px; }
+.sort-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 13px;
+  cursor: pointer;
+}
+.sort-btn:hover { border-color: var(--muted); }
+.sort-btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  font-weight: 600;
+}
+
+.hint { margin: 10px 0 12px; color: var(--muted); font-size: 13px; }
 
 .page-grid {
   list-style: none;
@@ -211,6 +268,46 @@ button, input, select { font: inherit; color: inherit; }
 .page-remove:focus-visible { opacity: 1; }
 @media (hover: none) {
   .page-remove { opacity: 1; }
+}
+
+/* 見出し・注目 */
+.page-tools { display: flex; gap: 4px; }
+.tool-btn {
+  flex: 1;
+  padding: 2px 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  font-size: 12px;
+  cursor: pointer;
+}
+.tool-btn:hover { border-color: var(--muted); }
+.tool-btn.is-toc[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+}
+.tool-btn.is-mark[aria-pressed="true"] {
+  border-color: var(--mark);
+  background: color-mix(in srgb, var(--mark) 18%, var(--surface));
+}
+.toc-input {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--bg);
+  font-size: 12px;
+}
+
+/* 「注目」のしおり（リボン） */
+.ribbon {
+  position: absolute;
+  top: 0;
+  right: 38px;
+  width: 14px;
+  height: 30px;
+  background: var(--mark);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 75%, 0 100%);
 }
 
 /* SortableJS の状態 */
