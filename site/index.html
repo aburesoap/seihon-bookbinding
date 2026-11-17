@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Seihon 製本</title>
-  <meta name="description" content="PDFや画像をまとめて, 持ち運べる1つのHTMLファイルに製本するツール. ">
+  <meta name="description" content="PDFや画像をまとめて, 持ち運べるHTMLファイルに製本するツール">
   <script>
     // 画面のちらつきを防ぐため, 保存済みのテーマとパネル位置を描画前に反映する.
     try {
@@ -25,7 +25,7 @@
         <button type="button" id="btn-theme" class="btn-sub btn-small"></button>
       </div>
     </div>
-    <p class="tagline">PDFや画像を, 1つのHTMLファイルの本にまとめます. 処理はすべてブラウザ内で行われ, ファイルが外部に送信されることはありません. </p>
+    <p class="tagline">PDFや画像を, 1つのHTMLファイルにまとめます</p>
   </header>
 
   <main class="workbench">
@@ -34,7 +34,7 @@
       <label class="dropzone" id="dropzone">
         <input type="file" id="file-input" multiple accept="image/*,application/pdf" hidden>
         <strong>ファイルを選択</strong>
-        <span>またはここにドラッグ&ドロップ（PDF・画像）</span>
+        <span>またはドラッグ&ドロップ（PDF・画像）</span>
       </label>
 
       <div class="pages-toolbar">
@@ -53,7 +53,7 @@
         <button type="button" class="sort-btn" data-sort="size">サイズ</button>
       </div>
 
-      <p class="hint" id="pages-hint">ドラッグで並び替えできます. 「見出し」で目次に載せる見出しを, 「注目」で製本者のしおりを付けられます. </p>
+      <p class="hint" id="pages-hint">ドラッグで並び替えできます. 「見出し」で目次に載せる見出しを, 「注目」で製本者のしおりを付けられます</p>
       <ol class="page-grid" id="page-grid"></ol>
     </section>
 
@@ -71,10 +71,10 @@
         <fieldset>
           <legend>綴じ方向</legend>
           <div class="segmented">
-            <label><input type="radio" name="direction" value="rtl" checked><span>右綴じ（右開き）</span></label>
-            <label><input type="radio" name="direction" value="ltr"><span>左綴じ（左開き）</span></label>
+            <label><input type="radio" name="direction" value="rtl" checked><span>右綴じ（左に進む）</span></label>
+            <label><input type="radio" name="direction" value="ltr"><span>左綴じ（右に進む）</span></label>
           </div>
-          <p class="note">右綴じは縦書きの本やマンガ, 左綴じは横書きの資料向けです. </p>
+          <p class="note">右綴じは縦書きの本やマンガ, 左綴じは横書きの資料向けです</p>
         </fieldset>
 
         <fieldset>
@@ -106,7 +106,7 @@
             <span>圧縮品質 <output id="quality-out">80</output></span>
             <input type="range" name="quality" min="40" max="100" step="5" value="80">
           </label>
-          <p class="note">画像はWebP形式に変換して埋め込みます（未対応のブラウザではJPEG）. </p>
+          <p class="note">画像はWebP形式に変換して埋め込みます（未対応のブラウザではJPEG）</p>
         </fieldset>
 
         <fieldset>
@@ -115,7 +115,7 @@
             <span>パスワード（任意）</span>
             <input type="text" name="password" placeholder="設定しない" spellcheck="false">
           </label>
-          <p class="note">設定すると, ページの内容と目次をパスワードで暗号化（AES-GCM）します. パスワードを忘れると開けなくなるので注意してください. </p>
+          <p class="note">設定すると, ページの内容と目次をパスワードで暗号化（AES-GCM）します</p>
         </fieldset>
       </form>
 
@@ -132,8 +132,8 @@
   </main>
 
   <footer class="app-footer">
-    <a href="https://github.com/aburesoap/seihon-bookbinding">GitHub</a>
-    <span>オープンソース（MIT License）</span>
+    <a href="https://github.com/aburesoap/seihon-bookbinding">2026 aburesoap</a>
+    <span>GitHub（MIT License）</span>
   </footer>
 </body>
 </html>
