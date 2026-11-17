@@ -5,17 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Seihon 製本</title>
   <meta name="description" content="PDFや画像をまとめて, 持ち運べる1つのHTMLファイルに製本するツール. ">
+  <script>
+    // 画面のちらつきを防ぐため, 保存済みのテーマとパネル位置を描画前に反映する.
+    try {
+      var saved = JSON.parse(localStorage.getItem("seihon:prefs") || "{}");
+      if (saved.theme) document.documentElement.dataset.theme = saved.theme;
+      if (saved.panel) document.documentElement.dataset.panel = saved.panel;
+    } catch (e) {}
+  </script>
   <link rel="stylesheet" href="css/app.css">
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
   <header class="app-header">
-    <h1 class="logo">Seihon <span>製本</span></h1>
+    <div class="header-row">
+      <h1 class="logo">Seihon <span>製本</span></h1>
+      <div class="header-actions">
+        <button type="button" id="btn-panel" class="btn-sub btn-small"></button>
+        <button type="button" id="btn-theme" class="btn-sub btn-small"></button>
+      </div>
+    </div>
     <p class="tagline">PDFや画像を, 1つのHTMLファイルの本にまとめます. 処理はすべてブラウザ内で行われ, ファイルが外部に送信されることはありません. </p>
   </header>
 
   <main class="workbench">
-    <!-- 左：ページの並び -->
+    <!-- ページの並び -->
     <section class="pages-panel" aria-label="ページ">
       <label class="dropzone" id="dropzone">
         <input type="file" id="file-input" multiple accept="image/*,application/pdf" hidden>
@@ -27,17 +41,23 @@
         <span id="page-count">0 ページ</span>
         <div class="toolbar-actions">
           <button type="button" id="btn-blank" class="btn-sub">白紙を追加</button>
-          <button type="button" id="btn-sort-name" class="btn-sub">名前順</button>
-          <button type="button" id="btn-reverse" class="btn-sub">逆順</button>
           <button type="button" id="btn-clear" class="btn-sub">すべて削除</button>
         </div>
       </div>
 
-      <p class="hint" id="pages-hint">ドラッグで並び替えできます. </p>
+      <div class="sort-bar" role="group" aria-label="並び替え">
+        <span class="sort-label">並び替え</span>
+        <button type="button" class="sort-btn" data-sort="name">名前</button>
+        <button type="button" class="sort-btn" data-sort="added">追加順</button>
+        <button type="button" class="sort-btn" data-sort="modified">更新日時</button>
+        <button type="button" class="sort-btn" data-sort="size">サイズ</button>
+      </div>
+
+      <p class="hint" id="pages-hint">ドラッグで並び替えできます. 「見出し」で目次に載せる見出しを, 「注目」で製本者のしおりを付けられます. </p>
       <ol class="page-grid" id="page-grid"></ol>
     </section>
 
-    <!-- 右：設定と製本 -->
+    <!-- 設定と製本 -->
     <aside class="settings-panel" aria-label="設定">
       <form id="settings" autocomplete="off">
         <fieldset>
@@ -95,7 +115,7 @@
             <span>パスワード（任意）</span>
             <input type="text" name="password" placeholder="設定しない" spellcheck="false">
           </label>
-          <p class="note">設定すると, ページの内容をパスワードで暗号化（AES-GCM）します. パスワードを忘れると開けなくなるので注意してください. </p>
+          <p class="note">設定すると, ページの内容と目次をパスワードで暗号化（AES-GCM）します. パスワードを忘れると開けなくなるので注意してください. </p>
         </fieldset>
       </form>
 

@@ -46,7 +46,7 @@ export async function filesToPages(files, onThumb) {
     if (isPdf(file)) {
       pages.push(...(await pdfToPages(file)));
     } else if (isImage(file)) {
-      pages.push({ id: nextId++, kind: "image", name: file.name, file, thumb: null });
+      pages.push({ ...basePage(file), kind: "image", name: file.name, file });
     } else {
       skipped.push(file.name);
     }
@@ -73,26 +73,38 @@ async function pdfToPages(file) {
   const doc = await pdfjs.getDocument({ data }).promise;
   const pages = [];
   for (let i = 1; i <= doc.numPages; i++) {
-    pages.push({
-      id: nextId++,
-      kind: "pdf",
-      name: `${file.name} p.${i}`,
-      sortKey: `${file.name}\u0000${String(i).padStart(6, "0")}`,
-      doc,
-      pageNumber: i,
-      thumb: null,
-    });
+    pages.push({ ...basePage(file), kind: "pdf", name: `${file.name} p.${i}`, doc, pageNumber: i });
   }
   return pages;
 }
 
 export function createBlankPage() {
-  return { id: nextId++, kind: "blank", name: "白紙", thumb: null };
+  return {
+    id: nextId++,
+    kind: "blank",
+    name: "白紙",
+    fileName: "白紙",
+    size: 0,
+    lastModified: Date.now(),
+    thumb: null,
+    toc: null,
+    marked: false,
+  };
 }
 
-// 並び替え用のキー. PDFのページはファイル名＋ページ番号で並ぶ.
-export function sortKeyOf(page) {
-  return page.sortKey ?? page.name;
+// どの種類のページにも共通する項目.
+// id は追加した順に増えるので, 「追加順」の並び替えにも使う.
+// toc は目次の見出し（null なら目次に載せない）, marked は製本者の「注目」しおり.
+function basePage(file) {
+  return {
+    id: nextId++,
+    fileName: file.name,
+    size: file.size,
+    lastModified: file.lastModified,
+    thumb: null,
+    toc: null,
+    marked: false,
+  };
 }
 
 async function makeThumb(page) {
