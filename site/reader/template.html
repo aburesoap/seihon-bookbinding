@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="generator" content="Seihon (https://github.com/aburesoap/seihon-bookbinding)">
+<title>{{TITLE}}</title>
+<style>
+{{STYLE}}
+</style>
+</head>
+<body>
+<div class="book" id="book">
+  <header class="bar bar-top">
+    <h1 class="title" id="title">{{TITLE}}</h1>
+    <div class="bar-buttons">
+      <button type="button" class="icon-btn" id="btn-layout" title="見開き／単ページの切り替え" aria-label="見開き／単ページの切り替え"></button>
+      <button type="button" class="icon-btn" id="btn-fullscreen" title="全画面表示" aria-label="全画面表示"></button>
+    </div>
+  </header>
+
+  <main class="stage" id="stage" aria-live="polite"></main>
+
+  <footer class="bar bar-bottom">
+    <button type="button" class="nav-btn" id="btn-left" aria-label="左のページへ">&#x2039;</button>
+    <input type="range" class="slider" id="slider" min="0" value="0" aria-label="ページ移動">
+    <span class="page-label" id="page-label"></span>
+    <button type="button" class="nav-btn" id="btn-right" aria-label="右のページへ">&#x203A;</button>
+  </footer>
+
+  <form class="lock" id="lock" hidden>
+    <p class="lock-title">{{TITLE}}</p>
+    <p class="lock-text">この本はパスワードで保護されています. </p>
+    <input type="password" id="lock-input" placeholder="パスワード" autocomplete="current-password" required>
+    <button type="submit">開く</button>
+    <p class="lock-error" id="lock-error" hidden></p>
+  </form>
+</div>
+<script type="application/json" id="book-data">{{DATA}}</script>
+<script>
+{{SCRIPT}}
+</script>
+</body>
+</html>

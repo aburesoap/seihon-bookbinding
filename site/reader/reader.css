@@ -1,0 +1,211 @@
+/* Seihon 製本された本（読む画面）のスタイル */
+
+:root {
+  --desk: #2a2826;
+  --desk-edge: #1e1d1b;
+  --bar: rgba(24, 23, 22, 0.82);
+  --text: #ece8e1;
+  --muted: #a8a299;
+  --accent: #c9b48a;
+  --font: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
+  --bar-h: 48px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: radial-gradient(ellipse at center, var(--desk) 0%, var(--desk-edge) 100%);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, input { font: inherit; color: inherit; }
+
+.book {
+  position: relative;
+  height: 100%;
+  height: 100dvh;
+}
+
+/* ---- 上下のバー ---- */
+
+.bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--bar-h);
+  padding: 0 max(12px, env(safe-area-inset-left)) 0 max(12px, env(safe-area-inset-right));
+  background: var(--bar);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+.bar-top { top: 0; justify-content: space-between; }
+.bar-bottom {
+  bottom: 0;
+  height: calc(var(--bar-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.book.is-immersive .bar-top { transform: translateY(-100%); opacity: 0; }
+.book.is-immersive .bar-bottom { transform: translateY(100%); opacity: 0; }
+
+.title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.bar-buttons { display: flex; gap: 6px; flex-shrink: 0; }
+
+.icon-btn {
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  background: transparent;
+  font-size: 13px;
+  cursor: pointer;
+}
+.icon-btn:hover { border-color: rgba(255, 255, 255, 0.4); }
+.icon-btn[hidden] { display: none; }
+
+.nav-btn {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+.nav-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); }
+.nav-btn:disabled { opacity: 0.25; cursor: default; }
+
+.slider {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+
+.page-label {
+  min-width: 64px;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.page-label[hidden] { display: none; }
+
+/* ---- ページを置く場所 ---- */
+
+.stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--bar-h) + 16px) 16px calc(var(--bar-h) + 16px + env(safe-area-inset-bottom));
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.spread {
+  display: flex;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+/* ページをめくったときだけ, めくる向きから少しずらして表示する */
+.spread.from-left { --from: -12px; animation: turn-in 0.22s ease-out; }
+.spread.from-right { --from: 12px; animation: turn-in 0.22s ease-out; }
+
+@keyframes turn-in {
+  from { opacity: 0.4; transform: translateX(var(--from, 0)); }
+  to { opacity: 1; transform: none; }
+}
+
+.page {
+  position: relative;
+  background: #fff;
+  overflow: hidden;
+}
+.page img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  -webkit-user-drag: none;
+}
+
+/* のど（綴じ目）の陰影 */
+.page::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8%;
+  pointer-events: none;
+}
+.page.is-left::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0));
+}
+.page.is-right::after {
+  left: 0;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0));
+}
+.page.is-alone::after { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .spread.from-left, .spread.from-right { animation: none; }
+  .bar { transition: none; }
+}
+
+/* ---- パスワード入力 ---- */
+
+.lock {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  background: var(--desk-edge);
+  text-align: center;
+}
+.lock[hidden] { display: none; }
+.lock-title { margin: 0; font-size: 20px; font-weight: 600; }
+.lock-text { margin: 0; color: var(--muted); font-size: 14px; }
+.lock input {
+  width: min(280px, 100%);
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.lock button {
+  width: min(280px, 100%);
+  padding: 10px 12px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #1e1d1b;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lock-error { margin: 0; color: #e8a0a0; font-size: 13px; }
