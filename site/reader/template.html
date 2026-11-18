@@ -29,6 +29,10 @@
       <button type="button" class="icon-btn" id="btn-bookmark" data-i18n-aria-label="bookmark" aria-pressed="false">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v18l-5-4-5 4z"/></svg>
       </button>
+      <button type="button" class="icon-btn" id="btn-share" data-i18n-title="share" data-i18n-aria-label="share" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM14 18h2v2h-2zM18 14h2v2h-2z"/></svg>
+      </button>
+      <button type="button" class="icon-btn text-btn" id="btn-lang"></button>
       <button type="button" class="icon-btn" id="btn-layout" data-i18n-title="layout" data-i18n-aria-label="layout">
         <svg viewBox="0 0 24 24" aria-hidden="true" class="icon-spread"><path d="M3 5h8v14H3zM13 5h8v14h-8z"/></svg>
         <svg viewBox="0 0 24 24" aria-hidden="true" class="icon-single"><path d="M7 4h10v16H7z"/></svg>
@@ -62,6 +66,21 @@
     <div class="drawer-body" id="drawer-body"></div>
   </nav>
 
+  <div class="dialog-backdrop" id="share-backdrop" hidden>
+    <div class="dialog" id="share-dialog" role="dialog" aria-modal="true" aria-labelledby="share-heading">
+      <div class="dialog-head">
+        <span id="share-heading" data-i18n="share"></span>
+        <button type="button" class="icon-btn" id="btn-share-close" data-i18n-aria-label="close">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <div class="share-qr" id="share-qr"></div>
+      <p class="share-url" id="share-url"></p>
+      <label class="share-option"><input type="checkbox" id="share-page"> <span data-i18n="sharePage"></span></label>
+      <button type="button" class="dialog-btn" id="btn-copy" data-i18n="copy"></button>
+    </div>
+  </div>
+
   <form class="lock" id="lock" hidden>
     <p class="lock-title">{{TITLE}}</p>
     <p class="lock-text" data-i18n="locked"></p>
@@ -71,6 +90,9 @@
   </form>
 </div>
 <script type="application/json" id="book-data">{{DATA}}</script>
+<script>
+{{QRCODE}}
+</script>
 <script>
 {{SCRIPT}}
 </script>

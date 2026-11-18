@@ -18,9 +18,10 @@ PDFや画像ファイルを読み込み, 1つのHTMLファイルの「本」に�
 - ページ番号の表示・非表示
 - パスワードによる暗号化（PBKDF2 + AES-GCM）
 - 画像はWebPに変換して埋め込み（サイズと品質を選択可能）
+- 公開先のURLからQRコードを作成（PNG・SVGで保存）. URLは本にも書き込まれる
 
 作成画面は, 表示言語（日本語・英語）, 設定パネルの左右の位置, テーマ（自動・ライト・ダーク）を切り替えられます（ブラウザに保存）.
-できあがった本の表示言語は, 製本したときの言語になります.
+できあがった本の表示言語は, 製本したときの言語になります（読み手も切り替え可能）.
 
 できあがった本は, キーボードの矢印キー, 画面の左右タップ, スワイプ, 下部のスライダーでページを移動できます.
 画面中央をタップすると上下のバーが隠れます.
@@ -28,6 +29,8 @@ PDFや画像ファイルを読み込み, 1つのHTMLファイルの「本」に�
 - 目次・しおり一覧（T キー）：目次, 製本者の注目ページ, 自分のしおりから移動
 - しおり（B キー）：表示中のページに挟む. 本ごとにブラウザに保存される
 - テーマ：自動・ライト・ダークの切り替え
+- 言語：日本語・英語の切り替え（ブラウザに保存）
+- 共有：公開先URLのQRコードとURLのコピー. 表示中のページから開くURLにもできる（公開先URLが書き込まれているか, Webサイト上で開いたときのみ）
 
 ## ディレクトリ構成
 
@@ -40,10 +43,12 @@ site/                 GitHub Pagesで公開するファイル（ビルド不要�
   js/build.js         HTMLファイルの組み立てと画像のWebP変換
   js/crypto.js        パスワードによる暗号化
   js/i18n.js          作成画面の訳語（日本語・英語）
+  js/qr.js            QRコードの描画（SVG・PNG）
   reader/             できあがる本（読む画面）のテンプレート
     template.html     HTMLの骨組み. {{TITLE}} などを置き換えて使う
     reader.css        読む画面のスタイル
-    reader.js         読む画面の動きと訳語（外部ライブラリなし）
+    reader.js         読む画面の動きと訳語
+  vendor/qrcode.min.js  QRコードの符号化ライブラリ（作成画面と本の両方で使う）
 .github/workflows/    GitHub Pagesへの公開設定
 ```
 
@@ -71,6 +76,10 @@ cd site && python3 -m http.server 8000
 
 - [PDF.js](https://mozilla.github.io/pdf.js/)（Apache License 2.0）: PDFのページを画像にする
 - [SortableJS](https://sortablejs.github.io/Sortable/)（MIT License）: ページの並び替え
+
+次のライブラリは `site/vendor/` に同梱し, できあがった本にも埋め込みます.
+
+- [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator)（MIT License）: QRコードの符号化. QRコードは株式会社デンソーウェーブの登録商標です
 
 ## メモ
 

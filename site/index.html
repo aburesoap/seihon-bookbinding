@@ -15,6 +15,7 @@
     } catch (e) {}
   </script>
   <link rel="stylesheet" href="css/app.css">
+  <script src="vendor/qrcode.min.js"></script>
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
@@ -118,6 +119,23 @@
             <input type="text" name="password" placeholder="設定しない" data-i18n-placeholder="settings.passwordPlaceholder" spellcheck="false">
           </label>
           <p class="note" data-i18n="settings.passwordNote">設定すると, ページの内容と目次をパスワードで暗号化（AES-GCM）します</p>
+        </fieldset>
+
+        <fieldset>
+          <legend data-i18n="settings.share">共有とQRコード</legend>
+          <label class="field">
+            <span data-i18n="settings.url">公開先のURL（任意）</span>
+            <input type="url" name="url" placeholder="https://" spellcheck="false" inputmode="url">
+          </label>
+          <p class="note" data-i18n="settings.urlNote">製本したHTMLを置く場所のURLです. 本にも書き込まれ, 読み手の共有ボタンからQRコードを表示できます</p>
+          <div class="qr-box" id="qr-box" hidden>
+            <div class="qr-image" id="qr-image"></div>
+            <div class="qr-actions">
+              <button type="button" id="btn-qr-png" class="btn-sub btn-small" data-i18n="settings.qrPng">PNGで保存</button>
+              <button type="button" id="btn-qr-svg" class="btn-sub btn-small" data-i18n="settings.qrSvg">SVGで保存</button>
+            </div>
+          </div>
+          <p class="note is-error" id="qr-error" data-i18n="settings.urlInvalid" hidden>http:// または https:// で始まるURLを入力してください</p>
         </fieldset>
       </form>
 
