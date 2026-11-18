@@ -31,6 +31,12 @@
       sectionToc: "目次",
       sectionMarks: "注目ページ",
       sectionMine: "あなたのしおり",
+      sectionColophon: "奥付",
+      author: "作者",
+      tags: "タグ",
+      feedback: "感想を送る",
+      postOnX: "Xで感想をポスト",
+      postText: "『{title}』を読みました",
       mineEmpty: "しおりはありません. 上のしおりボタンで, 表示中のページに挟めます",
       mark: "注目",
       removeBookmark: "{n}ページのしおりを外す",
@@ -67,6 +73,12 @@
       sectionToc: "Contents",
       sectionMarks: "Marked pages",
       sectionMine: "Your bookmarks",
+      sectionColophon: "Colophon",
+      author: "Author",
+      tags: "Tags",
+      feedback: "Send feedback",
+      postOnX: "Post about it on X",
+      postText: "I read \u201c{title}\u201d",
       mineEmpty: "No bookmarks yet. Use the bookmark button above to add one to the current page",
       mark: "Marked",
       removeBookmark: "Remove the bookmark on page {n}",
@@ -133,6 +145,7 @@
   var pages = [];        // [{ src, w, h }]
   var toc = [];          // 製本者が付けた目次 [{ page, title }]
   var marks = [];        // 製本者が付けた「注目」のページ番号
+  var colophon = null;   // 奥付 { author, xId, feedbackUrl, hashtags }
   var bookmarks = [];    // 読み手が挟んだしおりのページ番号
   var groups = [];       // 一度に表示するページ番号のまとまり（見開きなら2つずつ）
   var current = 0;       // 表示中のまとまりの先頭のページ番号
@@ -404,7 +417,77 @@
     });
     sections.push(section(t("sectionMine"), mine, t("mineEmpty")));
 
+    if (colophon) sections.push(colophonSection());
+
     el.drawerBody.replaceChildren.apply(el.drawerBody, sections);
+  }
+
+  // ---- 奥付 ----
+  // 製本時に形式を確かめているが, 念のためここでも確かめてからリンクにする.
+
+  function isWebUrl(text) {
+    return typeof text === "string" && /^https?:\/\/[^\s]+$/.test(text);
+  }
+
+  function colophonSection() {
+    var box = section(t("sectionColophon"), []);
+    box.classList.add("colophon");
+    var xId = /^[A-Za-z0-9_]{1,15}$/.test(colophon.xId || "") ? colophon.xId : "";
+    var tags = (colophon.hashtags || []).filter(function (tag) { return /^[^\s#＃]+$/.test(tag); });
+
+    var dl = document.createElement("dl");
+    addRow(dl, "", book.title, null, "colophon-title");
+    if (colophon.author) addRow(dl, t("author"), colophon.author);
+    if (xId) addRow(dl, "X", "@" + xId, "https://x.com/" + xId);
+    if (tags.length) {
+      addRow(dl, t("tags"), tags.map(function (tag) { return "#" + tag; }).join(" "));
+    }
+    box.appendChild(dl);
+
+    var actions = document.createElement("div");
+    actions.className = "colophon-actions";
+    if (isWebUrl(colophon.feedbackUrl)) actions.appendChild(linkButton(t("feedback"), colophon.feedbackUrl));
+    actions.appendChild(linkButton(t("postOnX"), postUrl(xId, tags)));
+    box.appendChild(actions);
+    return box;
+  }
+
+  function addRow(dl, term, value, href, className) {
+    var dt = document.createElement("dt");
+    dt.textContent = term;
+    var dd = document.createElement("dd");
+    if (className) dd.className = className;
+    if (href) {
+      var a = document.createElement("a");
+      a.href = href;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = value;
+      dd.appendChild(a);
+    } else {
+      dd.textContent = value;
+    }
+    dl.appendChild(dt);
+    dl.appendChild(dd);
+  }
+
+  function linkButton(text, href) {
+    var a = document.createElement("a");
+    a.className = "colophon-btn";
+    a.href = href;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.textContent = text;
+    return a;
+  }
+
+  // Xの投稿画面を開くURL. 作者のIDと公開先URL, ハッシュタグを添える.
+  function postUrl(xId, tags) {
+    var text = t("postText").replace("{title}", book.title) + (xId ? " @" + xId : "");
+    var params = "text=" + encodeURIComponent(text);
+    if (isWebUrl(book.url)) params += "&url=" + encodeURIComponent(book.url);
+    if (tags.length) params += "&hashtags=" + encodeURIComponent(tags.join(","));
+    return "https://x.com/intent/post?" + params;
   }
 
   function section(heading, items, emptyText) {
@@ -718,6 +801,7 @@
     pages = content.pages;
     toc = content.toc || [];
     marks = content.marks || [];
+    colophon = content.colophon || null;
     bookmarks = loadBookmarks();
     current = loadLocation();
     bindControls();

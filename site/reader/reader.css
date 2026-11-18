@@ -382,6 +382,38 @@ button, input { font: inherit; color: inherit; }
 }
 .drawer-remove:hover { background: var(--hover); color: var(--text); }
 
+/* 奥付 */
+.colophon dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 4px 0 0;
+  padding: 0 16px;
+  font-size: 13px;
+}
+.colophon dt { color: var(--muted); }
+.colophon dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.colophon dd a { color: var(--accent); }
+.colophon .colophon-title { grid-column: 1 / -1; font-weight: 600; font-size: 14px; }
+.colophon dt:first-child { display: none; }
+.colophon-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 0;
+}
+.colophon-btn {
+  display: block;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: inherit;
+  font-size: 13px;
+  text-align: center;
+  text-decoration: none;
+}
+.colophon-btn:hover { background: var(--hover); }
+
 /* ---- 共有（QRコード）---- */
 
 .dialog-backdrop {

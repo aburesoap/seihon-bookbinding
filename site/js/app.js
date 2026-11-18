@@ -29,6 +29,9 @@ const els = {
   qrBox: $("#qr-box"),
   qrImage: $("#qr-image"),
   qrError: $("#qr-error"),
+  xIdError: $("#xid-error"),
+  feedbackError: $("#feedback-error"),
+  tabs: [...document.querySelectorAll(".panel-tab")],
 };
 
 // アプリの状態. 表示は render() で pages から作り直す.
@@ -89,6 +92,7 @@ els.btnLang.addEventListener("click", () => {
 // ---- ページ一覧の表示 ----
 
 function render() {
+  els.grid.classList.toggle("is-rtl", els.form.direction.value === "rtl");
   els.grid.replaceChildren(...pages.map(pageItem));
   els.count.textContent = t("pages.count", { n: pages.length });
   els.hint.hidden = pages.length === 0;
@@ -101,10 +105,27 @@ function render() {
   }
 }
 
+// 見開きでの位置. 表紙を単独表示するときは, 2ページ目から2枚ずつ組になる.
+// first：組の1ページ目, cover：単独の表紙, alone：組の相手がいない.
+function spreadSlot(index) {
+  const coverSingle = els.form.coverSingle.checked;
+  if (coverSingle && index === 0) return { first: false, cover: true, alone: true };
+  const offset = coverSingle ? index - 1 : index;
+  const first = offset % 2 === 0;
+  return { first, cover: false, alone: first && index === pages.length - 1 };
+}
+
 function pageItem(page, index) {
   const li = document.createElement("li");
   li.className = "page-item";
   li.dataset.id = page.id;
+
+  // のど（綴じ目）が左右どちらに来るか. 右綴じでは組の1ページ目が右側になる.
+  const slot = spreadSlot(index);
+  const rtl = els.form.direction.value === "rtl";
+  li.classList.add(slot.first === rtl ? "gutter-left" : "gutter-right");
+  if (slot.cover) li.classList.add("is-cover");
+  if (slot.alone) li.classList.add("is-alone");
 
   const thumb = document.createElement("div");
   thumb.className = "page-thumb";
@@ -317,8 +338,83 @@ function readSettings() {
     quality: Number(data.get("quality")) / 100,
     password: String(data.get("password")),
     url: publicUrl(),
+    colophon: readColophon(),
   };
 }
+
+// ---- 設定パネルのタブ ----
+
+function selectTab(tab, focus = false) {
+  for (const other of els.tabs) {
+    const selected = other === tab;
+    other.setAttribute("aria-selected", String(selected));
+    other.tabIndex = selected ? 0 : -1;
+    document.getElementById(other.getAttribute("aria-controls")).hidden = !selected;
+  }
+  if (focus) tab.focus();
+}
+
+els.tabs.forEach((tab, i) => {
+  tab.addEventListener("click", () => selectTab(tab));
+  // 矢印キーでタブを移動する.
+  tab.addEventListener("keydown", (event) => {
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+    if (!step) return;
+    event.preventDefault();
+    selectTab(els.tabs[(i + step + els.tabs.length) % els.tabs.length], true);
+  });
+});
+
+// 綴じ方向と表紙の設定が変わったら, 見開きの組み方を描き直す.
+for (const name of ["direction", "coverSingle"]) {
+  for (const input of els.form.querySelectorAll(`[name="${name}"]`)) {
+    input.addEventListener("change", render);
+  }
+}
+
+// ---- 奥付・感想 ----
+// すべて任意. 形式が正しくないものは本に入れない.
+
+const X_ID = /^[A-Za-z0-9_]{1,15}$/;
+
+function cleanXId() {
+  return els.form.xId.value.trim().replace(/^[@＠]/, "");
+}
+
+function feedbackUrl() {
+  const text = els.form.feedbackUrl.value.trim();
+  return isWebUrl(text) ? text : "";
+}
+
+function readColophon() {
+  const xId = cleanXId();
+  const hashtags = els.form.hashtags.value
+    .split(/[\s,、，]+/)
+    .map((tag) => tag.replace(/^[#＃]+/, "").trim())
+    .filter(Boolean);
+  const colophon = {
+    author: els.form.author.value.trim(),
+    xId: X_ID.test(xId) ? xId : "",
+    feedbackUrl: feedbackUrl(),
+    hashtags: [...new Set(hashtags)],
+  };
+  const empty = !colophon.author && !colophon.xId && !colophon.feedbackUrl && colophon.hashtags.length === 0;
+  return empty ? null : colophon;
+}
+
+function updateColophonErrors() {
+  const xId = cleanXId();
+  els.xIdError.hidden = !xId || X_ID.test(xId);
+  const text = els.form.feedbackUrl.value.trim();
+  els.feedbackError.hidden = !text || Boolean(feedbackUrl());
+}
+
+els.form.xId.addEventListener("input", updateColophonErrors);
+// 「@」は欄の前に表示しているので, 入力されていたら外す.
+els.form.xId.addEventListener("blur", () => {
+  els.form.xId.value = cleanXId();
+});
+els.form.feedbackUrl.addEventListener("input", updateColophonErrors);
 
 // ---- 公開先URLとQRコード ----
 
@@ -434,4 +530,5 @@ function formatSize(bytes) {
 
 applyPrefs();
 updateQr();
+updateColophonErrors();
 render();

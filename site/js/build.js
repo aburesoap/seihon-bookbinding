@@ -57,6 +57,7 @@ export async function buildBook(pages, settings, onProgress = () => {}) {
       .map((page, i) => ({ page: i, title: (page.toc ?? "").trim() }))
       .filter((entry) => entry.title),
     marks: pages.flatMap((page, i) => (page.marked ? [i] : [])),
+    colophon: settings.colophon || undefined, // 奥付（作者名, X ID, 感想URL, ハッシュタグ）
   };
 
   const book = {
