@@ -1,19 +1,22 @@
 /* Seihon 製本された本（読む画面）のスタイル */
 
+/* 配色は作成画面と同じ. 紙色の机に, 濃紺（操作・読み手のしおり）と朱色（製本者の「注目」）. */
+
 /* ライトテーマ */
 :root {
-  --desk: #e8e3da;
-  --desk-edge: #d6d0c5;
-  --bar: rgba(250, 248, 244, 0.86);
-  --panel: #faf8f4;
-  --text: #2b2a28;
-  --muted: #76726b;
-  --line: rgba(0, 0, 0, 0.12);
-  --hover: rgba(0, 0, 0, 0.06);
-  --accent: #2f7ab0;
+  --desk: #efece6;
+  --desk-edge: #e1ddd4;
+  --bar: rgba(248, 247, 244, 0.9);
+  --panel: #ffffff;
+  --text: #24221f;
+  --muted: #77736b;
+  --line: rgba(40, 32, 20, 0.12);
+  --hover: rgba(31, 53, 87, 0.07);
+  --accent: #1f3557;
   --accent-text: #ffffff;
-  --mark: #c98a2b;
-  --shadow: 0 8px 30px rgba(60, 50, 40, 0.25), 0 2px 6px rgba(60, 50, 40, 0.18);
+  --mark: #d2462b;
+  --error: #b03a2e;
+  --shadow: 0 8px 30px rgba(40, 32, 20, 0.22), 0 2px 6px rgba(40, 32, 20, 0.14);
   --font: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
   --bar-h: 48px;
   color-scheme: light;
@@ -22,33 +25,35 @@
 /* ダークテーマ. 端末の設定に従い, 手動で選んだ場合はそちらを優先する. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --desk: #2a2826;
-    --desk-edge: #1e1d1b;
-    --bar: rgba(24, 23, 22, 0.82);
-    --panel: #22211f;
-    --text: #ece8e1;
-    --muted: #a8a299;
-    --line: rgba(255, 255, 255, 0.16);
-    --hover: rgba(255, 255, 255, 0.1);
-    --accent: #8fb0d8;
-    --accent-text: #14181d;
-    --mark: #e0b060;
+    --desk: #24231f;
+    --desk-edge: #1a1917;
+    --bar: rgba(26, 25, 23, 0.86);
+    --panel: #24231f;
+    --text: #ece8e0;
+    --muted: #a39e95;
+    --line: rgba(255, 255, 255, 0.14);
+    --hover: rgba(159, 182, 218, 0.12);
+    --accent: #9fb6da;
+    --accent-text: #121826;
+    --mark: #ee7a5c;
+    --error: #e88b7c;
     --shadow: 0 10px 40px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.4);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --desk: #2a2826;
-  --desk-edge: #1e1d1b;
-  --bar: rgba(24, 23, 22, 0.82);
-  --panel: #22211f;
-  --text: #ece8e1;
-  --muted: #a8a299;
-  --line: rgba(255, 255, 255, 0.16);
-  --hover: rgba(255, 255, 255, 0.1);
-  --accent: #8fb0d8;
-  --accent-text: #14181d;
-  --mark: #e0b060;
+  --desk: #24231f;
+  --desk-edge: #1a1917;
+  --bar: rgba(26, 25, 23, 0.86);
+  --panel: #24231f;
+  --text: #ece8e0;
+  --muted: #a39e95;
+  --line: rgba(255, 255, 255, 0.14);
+  --hover: rgba(159, 182, 218, 0.12);
+  --accent: #9fb6da;
+  --accent-text: #121826;
+  --mark: #ee7a5c;
+  --error: #e88b7c;
   --shadow: 0 10px 40px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.4);
   color-scheme: dark;
 }
@@ -516,4 +521,4 @@ button, input { font: inherit; color: inherit; }
   font-weight: 600;
   cursor: pointer;
 }
-.lock-error { margin: 0; color: #c04848; font-size: 13px; }
+.lock-error { margin: 0; color: var(--error); font-size: 13px; }
