@@ -4,6 +4,7 @@ import Sortable from "https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/modular/sor
 import { filesToPages, createBlankPage, compareNames } from "./sources.js";
 import { buildBook } from "./build.js";
 import { t, setLang, getLang } from "./i18n.js";
+import { qrSvg, qrCanvas, isWebUrl } from "./qr.js";
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -25,6 +26,9 @@ const els = {
   progressBar: $("#progress-bar"),
   progressText: $("#progress-text"),
   result: $("#result"),
+  qrBox: $("#qr-box"),
+  qrImage: $("#qr-image"),
+  qrError: $("#qr-error"),
 };
 
 // アプリの状態. 表示は render() で pages から作り直す.
@@ -312,8 +316,39 @@ function readSettings() {
     maxEdge: Number(data.get("maxEdge")),
     quality: Number(data.get("quality")) / 100,
     password: String(data.get("password")),
+    url: publicUrl(),
   };
 }
+
+// ---- 公開先URLとQRコード ----
+
+function publicUrl() {
+  const text = els.form.url.value.trim();
+  return isWebUrl(text) ? text : "";
+}
+
+function updateQr() {
+  const text = els.form.url.value.trim();
+  const url = publicUrl();
+  els.qrBox.hidden = !url;
+  els.qrError.hidden = !text || Boolean(url);
+  els.qrImage.innerHTML = url ? qrSvg(url) : "";
+}
+
+els.form.url.addEventListener("input", updateQr);
+
+$("#btn-qr-svg").addEventListener("click", () => {
+  const url = publicUrl();
+  if (!url) return;
+  const blob = new Blob([qrSvg(url)], { type: "image/svg+xml" });
+  download(blob, `${safeFileName(readSettings().title)}-qr.svg`);
+});
+
+$("#btn-qr-png").addEventListener("click", () => {
+  const url = publicUrl();
+  if (!url) return;
+  qrCanvas(url).toBlob((blob) => download(blob, `${safeFileName(readSettings().title)}-qr.png`), "image/png");
+});
 
 els.form.quality.addEventListener("input", () => {
   els.qualityOut.textContent = els.form.quality.value;
@@ -398,4 +433,5 @@ function formatSize(bytes) {
 }
 
 applyPrefs();
+updateQr();
 render();

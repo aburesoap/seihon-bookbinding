@@ -38,6 +38,13 @@
       password: "パスワード",
       open: "開く",
       wrongPassword: "パスワードが違います",
+      share: "共有",
+      sharePage: "表示中のページから開く",
+      copy: "URLをコピー",
+      copied: "コピーしました",
+      copyFailed: "コピーできませんでした. URLを選択してコピーしてください",
+      langButton: "EN",
+      langTitle: "Show in English",
     },
     en: {
       toc: "Contents and bookmarks",
@@ -67,10 +74,18 @@
       password: "Password",
       open: "Open",
       wrongPassword: "Wrong password",
+      share: "Share",
+      sharePage: "Open at the current page",
+      copy: "Copy URL",
+      copied: "Copied",
+      copyFailed: "Could not copy. Select the URL and copy it",
+      langButton: "JA",
+      langTitle: "日本語で表示",
     },
   };
-  var lang = MESSAGES[book.lang] ? book.lang : "ja";
-  document.documentElement.lang = lang;
+  // 読み手が切り替えた言語があればそれを, なければ製本したときの言語を使う.
+  var LANG_KEY = "seihon:reader-lang";
+  var lang = "ja";
 
   function t(key, n) {
     var text = MESSAGES[lang][key] || MESSAGES.ja[key] || key;
@@ -105,6 +120,14 @@
     lock: document.getElementById("lock"),
     lockInput: document.getElementById("lock-input"),
     lockError: document.getElementById("lock-error"),
+    share: document.getElementById("btn-share"),
+    lang: document.getElementById("btn-lang"),
+    shareBackdrop: document.getElementById("share-backdrop"),
+    shareClose: document.getElementById("btn-share-close"),
+    shareQr: document.getElementById("share-qr"),
+    shareUrl: document.getElementById("share-url"),
+    sharePage: document.getElementById("share-page"),
+    copy: document.getElementById("btn-copy"),
   };
 
   var pages = [];        // [{ src, w, h }]
@@ -252,6 +275,7 @@
     el.bookmark.title = t(marked ? "bookmarkRemove" : "bookmarkAdd");
 
     if (!el.drawer.hidden) renderDrawer();
+    if (!el.shareBackdrop.hidden) renderShare();
   }
 
   function preload(groupIndex) {
@@ -444,6 +468,82 @@
     storage.set(THEME_KEY, theme === "auto" ? null : theme);
   }
 
+  // ---- 言語の切り替え ----
+
+  function setLanguage(next, save) {
+    lang = MESSAGES[next] ? next : "ja";
+    document.documentElement.lang = lang;
+    if (save) storage.set(LANG_KEY, lang === book.lang ? null : lang);
+    translatePage();
+    el.lang.textContent = t("langButton");
+    el.lang.title = t("langTitle");
+    el.lang.lang = lang === "ja" ? "en" : "ja";
+    el.theme.title = t("theme." + currentTheme());
+    if (groups.length) show(groupIndexOf(current), null);
+    if (!el.shareBackdrop.hidden) renderShare();
+  }
+
+  // ---- 共有（QRコード）----
+  // 製本者が公開先URLを書き込んでいればそれを, Webで開いていればそのURLを使う.
+
+  function shareBaseUrl() {
+    if (book.url) return book.url;
+    if (/^https?:$/.test(location.protocol)) return location.href.split("#")[0];
+    return null;
+  }
+
+  function shareTarget() {
+    var url = shareBaseUrl();
+    return el.sharePage.checked ? url.split("#")[0] + "#p=" + (current + 1) : url;
+  }
+
+  function openShare() {
+    el.sharePage.checked = false;
+    renderShare();
+    el.shareBackdrop.hidden = false;
+    el.shareClose.focus();
+  }
+
+  function closeShare() {
+    el.shareBackdrop.hidden = true;
+  }
+
+  function renderShare() {
+    var url = shareTarget();
+    el.shareQr.innerHTML = qrSvg(url);
+    el.shareUrl.textContent = url;
+    el.copy.textContent = t("copy");
+  }
+
+  function copyUrl() {
+    var url = shareTarget();
+    var done = function () { el.copy.textContent = t("copied"); };
+    var fail = function () { el.copy.textContent = t("copyFailed"); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done, fail);
+    } else {
+      fail();
+    }
+  }
+
+  // qrcode は同じHTMLに埋め込んだ qrcode-generator が定義する.
+  function qrSvg(text) {
+    var qr = window.qrcode(0, "M");
+    qr.addData(text, "Byte");
+    qr.make();
+    var count = qr.getModuleCount();
+    var margin = 4;
+    var size = count + margin * 2;
+    var path = "";
+    for (var y = 0; y < count; y++) {
+      for (var x = 0; x < count; x++) {
+        if (qr.isDark(y, x)) path += "M" + (x + margin) + " " + (y + margin) + "h1v1h-1z";
+      }
+    }
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + " " + size + '" shape-rendering="crispEdges">'
+      + '<rect width="' + size + '" height="' + size + '" fill="#fff"/><path d="' + path + '" fill="#000"/></svg>';
+  }
+
   // ---- 操作 ----
 
   function bindControls() {
@@ -464,6 +564,21 @@
     el.drawerBackdrop.addEventListener("click", closeDrawer);
 
     el.bookmark.addEventListener("click", toggleBookmark);
+
+    el.lang.addEventListener("click", function () {
+      setLanguage(lang === "ja" ? "en" : "ja", true);
+    });
+
+    if (shareBaseUrl() && window.qrcode) {
+      el.share.hidden = false;
+      el.share.addEventListener("click", openShare);
+      el.shareClose.addEventListener("click", closeShare);
+      el.shareBackdrop.addEventListener("click", function (event) {
+        if (event.target === el.shareBackdrop) closeShare();
+      });
+      el.sharePage.addEventListener("change", renderShare);
+      el.copy.addEventListener("click", copyUrl);
+    }
 
     el.layout.addEventListener("click", function () {
       userLayout = isSpread() ? "single" : "spread";
@@ -493,7 +608,7 @@
         case "f": toggleFullscreen(); break;
         case "b": toggleBookmark(); break;
         case "t": el.drawer.hidden ? openDrawer() : closeDrawer(); break;
-        case "Escape": closeDrawer(); break;
+        case "Escape": closeDrawer(); closeShare(); break;
         default: return;
       }
       event.preventDefault();
@@ -609,7 +724,8 @@
     relayout();
   }
 
-  translatePage();
+  if (window.qrcode) window.qrcode.stringToBytes = window.qrcode.stringToBytesFuncs["UTF-8"];
+  setLanguage(storage.get(LANG_KEY) || book.lang, false);
   applyTheme(currentTheme());
   if (book.encrypted) unlock();
   else start(book.content || book.pages);

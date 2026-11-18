@@ -340,6 +340,7 @@ legend {
 .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
 .field > span { font-size: 13px; color: var(--muted); }
 .field input[type="text"],
+.field input[type="url"],
 .field select {
   width: 100%;
   padding: 8px 10px;
@@ -372,6 +373,25 @@ legend {
 .segmented input:focus-visible + span { outline: 2px solid var(--accent); }
 
 .note { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+.note.is-error { color: var(--danger); }
+.note[hidden] { display: none; }
+
+/* QRコード */
+.qr-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+.qr-box[hidden] { display: none; }
+.qr-image {
+  width: 112px;
+  flex-shrink: 0;
+  line-height: 0;
+  border: 1px solid var(--line);
+}
+.qr-image svg { width: 100%; height: auto; }
+.qr-actions { display: flex; flex-direction: column; gap: 6px; }
 
 /* ---- ボタン ---- */
 
@@ -396,7 +416,7 @@ legend {
 button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .actions { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
-.actions button { padding: 11px 14px; }
+.actions button { padding: 11px 10px; white-space: nowrap; }
 
 .progress { margin-top: 12px; }
 .progress progress { width: 100%; accent-color: var(--accent); }

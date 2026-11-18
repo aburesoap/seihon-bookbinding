@@ -11,6 +11,7 @@ const READER_FILES = {
   template: "reader/template.html",
   style: "reader/reader.css",
   script: "reader/reader.js",
+  qrcode: "vendor/qrcode.min.js",
 };
 
 let readerCache = null;
@@ -68,6 +69,7 @@ export async function buildBook(pages, settings, onProgress = () => {}) {
     layout: settings.layout,
     coverSingle: settings.coverSingle,
     showPageNumber: settings.showPageNumber,
+    url: settings.url || undefined, // 公開先URL. 読み手の共有ボタンで使う
   };
 
   if (settings.password) {
@@ -86,6 +88,7 @@ function fillTemplate(reader, book) {
     TITLE: escapeHtml(book.title),
     STYLE: reader.style,
     SCRIPT: reader.script,
+    QRCODE: reader.qrcode,
     DATA: safeJson(book),
   };
   // 置換文字列中の "$" が特別扱いされないよう, 関数で置き換える.
