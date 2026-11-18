@@ -217,6 +217,8 @@ button, input, select { font: inherit; color: inherit; }
   column-gap: 0;
   row-gap: 20px;
 }
+/* 狭い画面（スマホ）では1段に1見開き. ページが大きくなり, ボタンも押しやすくなる */
+@container (max-width: 459px) { .page-grid { --cols: 2; } }
 @container (min-width: 620px) { .page-grid { --cols: 6; } }
 @container (min-width: 860px) { .page-grid { --cols: 8; } }
 @container (min-width: 1100px) { .page-grid { --cols: 10; } }
@@ -353,6 +355,10 @@ button, input, select { font: inherit; color: inherit; }
   cursor: pointer;
 }
 .tool-btn:hover { border-color: var(--muted); }
+/* タッチ操作の端末では, 押しやすいよう少し大きくする */
+@media (hover: none) {
+  .tool-btn { padding: 4px 0; font-size: 12px; }
+}
 .tool-btn.is-toc[aria-pressed="true"] {
   border-color: var(--navy);
   background: var(--navy);
@@ -552,7 +558,7 @@ legend::before {
 .result.is-error { color: var(--danger); }
 .result[hidden] { display: none; }
 
-.progress progress { width: 100%; accent-color: var(--navy); }
+.progress progress { width: 100%; accent-color: var(--shu); }
 .progress span { font-size: 12px; color: var(--muted); }
 .progress[hidden] { display: none; }
 
