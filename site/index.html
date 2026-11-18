@@ -21,18 +21,20 @@
 <body>
   <header class="app-header">
     <div class="header-row">
-      <h1 class="logo">Seihon <span>製本</span></h1>
+      <div class="brand">
+        <h1 class="logo">Seihon <span>製本</span></h1>
+        <p class="tagline" data-i18n="header.tagline">PDFや画像を, 1つのHTMLファイルにまとめます</p>
+      </div>
       <div class="header-actions">
         <button type="button" id="btn-lang" class="btn-sub btn-small"></button>
         <button type="button" id="btn-panel" class="btn-sub btn-small"></button>
         <button type="button" id="btn-theme" class="btn-sub btn-small"></button>
       </div>
     </div>
-    <p class="tagline" data-i18n="header.tagline">PDFや画像を, 1つのHTMLファイルにまとめます</p>
   </header>
 
   <main class="workbench">
-    <!-- ページの並び -->
+    <!-- 左：ページの作業台 -->
     <section class="pages-panel" aria-label="ページ" data-i18n-aria-label="settings.pages">
       <label class="dropzone" id="dropzone">
         <input type="file" id="file-input" multiple accept="image/*,application/pdf" hidden>
@@ -41,113 +43,173 @@
       </label>
 
       <div class="pages-toolbar">
-        <span id="page-count">0 ページ</span>
+        <div class="sort-bar" role="group" aria-label="並び替え" data-i18n-aria-label="pages.sortGroup">
+          <span class="sort-label" data-i18n="pages.sortGroup">並び替え</span>
+          <button type="button" class="sort-btn" data-sort="name" data-i18n="sort.name">名前</button>
+          <button type="button" class="sort-btn" data-sort="added" data-i18n="sort.added">追加順</button>
+          <button type="button" class="sort-btn" data-sort="modified" data-i18n="sort.modified">更新日時</button>
+          <button type="button" class="sort-btn" data-sort="size" data-i18n="sort.size">サイズ</button>
+        </div>
         <div class="toolbar-actions">
-          <button type="button" id="btn-blank" class="btn-sub" data-i18n="pages.addBlank">白紙を追加</button>
-          <button type="button" id="btn-clear" class="btn-sub" data-i18n="pages.clear">すべて削除</button>
+          <button type="button" id="btn-blank" class="btn-sub btn-small" data-i18n="pages.addBlank">白紙を追加</button>
+          <button type="button" id="btn-clear" class="btn-sub btn-small" data-i18n="pages.clear">すべて削除</button>
         </div>
       </div>
 
-      <div class="sort-bar" role="group" aria-label="並び替え" data-i18n-aria-label="pages.sortGroup">
-        <span class="sort-label" data-i18n="pages.sortGroup">並び替え</span>
-        <button type="button" class="sort-btn" data-sort="name" data-i18n="sort.name">名前</button>
-        <button type="button" class="sort-btn" data-sort="added" data-i18n="sort.added">追加順</button>
-        <button type="button" class="sort-btn" data-sort="modified" data-i18n="sort.modified">更新日時</button>
-        <button type="button" class="sort-btn" data-sort="size" data-i18n="sort.size">サイズ</button>
-      </div>
-
       <p class="hint" id="pages-hint" data-i18n="pages.hint">ドラッグで並び替えできます. 「見出し」で目次に載せる見出しを, 「注目」で製本者のしおりを付けられます</p>
+      <!-- 見開きになる2ページが隣り合うよう, 綴じ方向と表紙の設定に合わせて並べる -->
       <ol class="page-grid" id="page-grid"></ol>
     </section>
 
-    <!-- 設定と製本 -->
+    <!-- 右：製本の設定 -->
     <aside class="settings-panel" aria-label="設定" data-i18n-aria-label="settings.label">
-      <form id="settings" autocomplete="off">
-        <fieldset>
-          <legend data-i18n="settings.book">本の情報</legend>
-          <label class="field">
-            <span data-i18n="settings.title">タイトル</span>
-            <input type="text" name="title" placeholder="無題の本" data-i18n-placeholder="settings.untitled">
-          </label>
-        </fieldset>
+      <div class="panel-tabs" role="tablist" aria-label="設定" data-i18n-aria-label="settings.label">
+        <button type="button" role="tab" class="panel-tab" id="tab-binding" aria-controls="pane-binding" aria-selected="true" data-i18n="tab.binding">原稿・綴じ方</button>
+        <button type="button" role="tab" class="panel-tab" id="tab-quality" aria-controls="pane-quality" aria-selected="false" tabindex="-1" data-i18n="tab.quality">画質・装丁</button>
+        <button type="button" role="tab" class="panel-tab" id="tab-colophon" aria-controls="pane-colophon" aria-selected="false" tabindex="-1" data-i18n="tab.colophon">奥付・感想</button>
+        <button type="button" role="tab" class="panel-tab" id="tab-publish" aria-controls="pane-publish" aria-selected="false" tabindex="-1" data-i18n="tab.publish">公開・鍵かけ</button>
+      </div>
 
-        <fieldset>
-          <legend data-i18n="settings.direction">綴じ方向</legend>
-          <div class="segmented">
-            <label><input type="radio" name="direction" value="rtl" checked><span data-i18n="settings.rtl">右綴じ（左に進む）</span></label>
-            <label><input type="radio" name="direction" value="ltr"><span data-i18n="settings.ltr">左綴じ（右に進む）</span></label>
-          </div>
-          <p class="note" data-i18n="settings.directionNote">右綴じは縦書きの本やマンガ, 左綴じは横書きの資料向けです</p>
-        </fieldset>
+      <form id="settings" class="panel-body" autocomplete="off">
+        <!-- 1. 原稿・綴じ方 -->
+        <div class="tab-pane" role="tabpanel" id="pane-binding" aria-labelledby="tab-binding">
+          <fieldset>
+            <legend data-i18n="settings.book">本の情報</legend>
+            <label class="field">
+              <span data-i18n="settings.title">タイトル</span>
+              <input type="text" name="title" placeholder="無題の本" data-i18n-placeholder="settings.untitled">
+            </label>
+          </fieldset>
 
-        <fieldset>
-          <legend data-i18n="settings.display">表示</legend>
-          <label class="field">
-            <span data-i18n="settings.layout">ページの並べ方</span>
-            <select name="layout">
-              <option value="auto" data-i18n="settings.layout.auto">自動（横長の画面では見開き）</option>
-              <option value="spread" data-i18n="settings.layout.spread">常に見開き</option>
-              <option value="single" data-i18n="settings.layout.single">常に単ページ</option>
-            </select>
-          </label>
-          <label class="check"><input type="checkbox" name="coverSingle" checked> <span data-i18n="settings.coverSingle">表紙（1ページ目）を単独で表示</span></label>
-          <label class="check"><input type="checkbox" name="showPageNumber" checked> <span data-i18n="settings.showPageNumber">ページ番号を表示</span></label>
-        </fieldset>
-
-        <fieldset>
-          <legend data-i18n="settings.quality">画質</legend>
-          <label class="field">
-            <span data-i18n="settings.maxEdge">ページの最大サイズ（長辺）</span>
-            <select name="maxEdge">
-              <option value="1280" data-i18n="settings.maxEdge.1280">1280px（軽量）</option>
-              <option value="1920" selected data-i18n="settings.maxEdge.1920">1920px（標準）</option>
-              <option value="2560" data-i18n="settings.maxEdge.2560">2560px（高画質）</option>
-              <option value="3840" data-i18n="settings.maxEdge.3840">3840px（最高画質）</option>
-            </select>
-          </label>
-          <label class="field">
-            <span><span data-i18n="settings.compression">圧縮品質</span> <output id="quality-out">80</output></span>
-            <input type="range" name="quality" min="40" max="100" step="5" value="80">
-          </label>
-          <p class="note" data-i18n="settings.qualityNote">画像はWebP形式に変換して埋め込みます（未対応のブラウザではJPEG）</p>
-        </fieldset>
-
-        <fieldset>
-          <legend data-i18n="settings.publish">公開設定</legend>
-          <label class="field">
-            <span data-i18n="settings.password">パスワード（任意）</span>
-            <input type="text" name="password" placeholder="設定しない" data-i18n-placeholder="settings.passwordPlaceholder" spellcheck="false">
-          </label>
-          <p class="note" data-i18n="settings.passwordNote">設定すると, ページの内容と目次をパスワードで暗号化（AES-GCM）します</p>
-        </fieldset>
-
-        <fieldset>
-          <legend data-i18n="settings.share">共有とQRコード</legend>
-          <label class="field">
-            <span data-i18n="settings.url">公開先のURL（任意）</span>
-            <input type="url" name="url" placeholder="https://" spellcheck="false" inputmode="url">
-          </label>
-          <p class="note" data-i18n="settings.urlNote">製本したHTMLを置く場所のURLです. 本にも書き込まれ, 読み手の共有ボタンからQRコードを表示できます</p>
-          <div class="qr-box" id="qr-box" hidden>
-            <div class="qr-image" id="qr-image"></div>
-            <div class="qr-actions">
-              <button type="button" id="btn-qr-png" class="btn-sub btn-small" data-i18n="settings.qrPng">PNGで保存</button>
-              <button type="button" id="btn-qr-svg" class="btn-sub btn-small" data-i18n="settings.qrSvg">SVGで保存</button>
+          <fieldset>
+            <legend data-i18n="settings.direction">綴じ方向</legend>
+            <div class="segmented">
+              <label><input type="radio" name="direction" value="rtl" checked><span data-i18n="settings.rtl">右綴じ（左に進む）</span></label>
+              <label><input type="radio" name="direction" value="ltr"><span data-i18n="settings.ltr">左綴じ（右に進む）</span></label>
             </div>
-          </div>
-          <p class="note is-error" id="qr-error" data-i18n="settings.urlInvalid" hidden>http:// または https:// で始まるURLを入力してください</p>
-        </fieldset>
+            <p class="note" data-i18n="settings.directionNote">右綴じは縦書きの本やマンガ, 左綴じは横書きの資料向けです</p>
+          </fieldset>
+
+          <fieldset>
+            <legend data-i18n="settings.display">見開き</legend>
+            <label class="field">
+              <span data-i18n="settings.layout">ページの並べ方</span>
+              <select name="layout">
+                <option value="auto" data-i18n="settings.layout.auto">自動（横長の画面では見開き）</option>
+                <option value="spread" data-i18n="settings.layout.spread">常に見開き</option>
+                <option value="single" data-i18n="settings.layout.single">常に単ページ</option>
+              </select>
+            </label>
+            <label class="check"><input type="checkbox" name="coverSingle" checked> <span data-i18n="settings.coverSingle">表紙（1ページ目）を単独で表示</span></label>
+          </fieldset>
+        </div>
+
+        <!-- 2. 画質・装丁 -->
+        <div class="tab-pane" role="tabpanel" id="pane-quality" aria-labelledby="tab-quality" hidden>
+          <fieldset>
+            <legend data-i18n="settings.quality">画質</legend>
+            <label class="field">
+              <span data-i18n="settings.maxEdge">ページの最大サイズ（長辺）</span>
+              <select name="maxEdge">
+                <option value="1280" data-i18n="settings.maxEdge.1280">1280px（軽量）</option>
+                <option value="1920" selected data-i18n="settings.maxEdge.1920">1920px（標準）</option>
+                <option value="2560" data-i18n="settings.maxEdge.2560">2560px（高画質）</option>
+                <option value="3840" data-i18n="settings.maxEdge.3840">3840px（最高画質）</option>
+              </select>
+            </label>
+            <label class="field">
+              <span><span data-i18n="settings.compression">圧縮品質</span> <output id="quality-out">80</output></span>
+              <input type="range" name="quality" min="40" max="100" step="5" value="80">
+            </label>
+            <p class="note" data-i18n="settings.qualityNote">画像はWebP形式に変換して埋め込みます（未対応のブラウザではJPEG）</p>
+          </fieldset>
+
+          <fieldset>
+            <legend data-i18n="settings.binding">装丁</legend>
+            <label class="check"><input type="checkbox" name="showPageNumber" checked> <span data-i18n="settings.showPageNumber">ページ番号を表示</span></label>
+          </fieldset>
+        </div>
+
+        <!-- 3. 奥付・感想 -->
+        <div class="tab-pane" role="tabpanel" id="pane-colophon" aria-labelledby="tab-colophon" hidden>
+          <p class="note pane-lead" data-i18n="colophon.lead">すべて任意です. 本の「目次・しおり」の最後に奥付として載ります</p>
+          <fieldset>
+            <legend data-i18n="colophon.author">作者</legend>
+            <label class="field">
+              <span data-i18n="colophon.name">作者名</span>
+              <input type="text" name="author" spellcheck="false">
+            </label>
+            <label class="field">
+              <span data-i18n="colophon.xId">X（旧Twitter）のID</span>
+              <span class="input-prefix">
+                <span aria-hidden="true">@</span>
+                <input type="text" name="xId" spellcheck="false" autocapitalize="off" inputmode="latin">
+              </span>
+            </label>
+            <p class="note is-error" id="xid-error" data-i18n="colophon.xIdInvalid" hidden>英数字と _ の15文字以内で入力してください</p>
+          </fieldset>
+
+          <fieldset>
+            <legend data-i18n="colophon.feedback">感想</legend>
+            <label class="field">
+              <span data-i18n="colophon.feedbackUrl">感想を受け付けるURL</span>
+              <input type="url" name="feedbackUrl" placeholder="https://" spellcheck="false" inputmode="url">
+            </label>
+            <p class="note" data-i18n="colophon.feedbackNote">感想フォームや匿名メッセージサービスなどのURLです</p>
+            <p class="note is-error" id="feedback-error" data-i18n="settings.urlInvalid" hidden>http:// または https:// で始まるURLを入力してください</p>
+            <label class="field">
+              <span data-i18n="colophon.hashtags">ハッシュタグ</span>
+              <input type="text" name="hashtags" data-i18n-placeholder="colophon.hashtagsPlaceholder" placeholder="#新刊 #サンプル" spellcheck="false">
+            </label>
+            <p class="note" data-i18n="colophon.hashtagsNote">スペース区切りで複数入力できます. 読み手がXで感想をポストするときに付きます</p>
+          </fieldset>
+        </div>
+
+        <!-- 4. 公開・鍵かけ -->
+        <div class="tab-pane" role="tabpanel" id="pane-publish" aria-labelledby="tab-publish" hidden>
+          <fieldset>
+            <legend data-i18n="settings.publish">鍵かけ</legend>
+            <label class="field">
+              <span data-i18n="settings.password">パスワード（任意）</span>
+              <input type="text" name="password" placeholder="設定しない" data-i18n-placeholder="settings.passwordPlaceholder" spellcheck="false">
+            </label>
+            <p class="note" data-i18n="settings.passwordNote">設定すると, ページの内容と目次をパスワードで暗号化（AES-GCM）します</p>
+          </fieldset>
+
+          <fieldset>
+            <legend data-i18n="settings.share">共有とQRコード</legend>
+            <label class="field">
+              <span data-i18n="settings.url">公開先のURL（任意）</span>
+              <input type="url" name="url" placeholder="https://" spellcheck="false" inputmode="url">
+            </label>
+            <p class="note" data-i18n="settings.urlNote">製本したHTMLを置く場所のURLです. 本にも書き込まれ, 読み手の共有ボタンからQRコードを表示できます</p>
+            <div class="qr-box" id="qr-box" hidden>
+              <div class="qr-image" id="qr-image"></div>
+              <div class="qr-actions">
+                <button type="button" id="btn-qr-png" class="btn-sub btn-small" data-i18n="settings.qrPng">PNGで保存</button>
+                <button type="button" id="btn-qr-svg" class="btn-sub btn-small" data-i18n="settings.qrSvg">SVGで保存</button>
+              </div>
+            </div>
+            <p class="note is-error" id="qr-error" data-i18n="settings.urlInvalid" hidden>http:// または https:// で始まるURLを入力してください</p>
+          </fieldset>
+        </div>
       </form>
 
-      <div class="actions">
-        <button type="button" id="btn-preview" class="btn-sub" disabled data-i18n="action.preview">プレビュー</button>
-        <button type="button" id="btn-build" class="btn-main" disabled data-i18n="action.build">製本する</button>
+      <!-- 常に見える製本ボタン -->
+      <div class="panel-footer">
+        <div class="footer-status">
+          <span class="page-total" id="page-count">0 ページ</span>
+          <p class="result" id="result" hidden></p>
+        </div>
+        <div class="progress" id="progress" hidden>
+          <progress id="progress-bar" max="1" value="0"></progress>
+          <span id="progress-text"></span>
+        </div>
+        <div class="actions">
+          <button type="button" id="btn-preview" class="btn-sub" disabled data-i18n="action.preview">プレビュー</button>
+          <button type="button" id="btn-build" class="btn-main" disabled data-i18n="action.build">製本する</button>
+        </div>
       </div>
-      <div class="progress" id="progress" hidden>
-        <progress id="progress-bar" max="1" value="0"></progress>
-        <span id="progress-text"></span>
-      </div>
-      <p class="result" id="result" hidden></p>
     </aside>
   </main>
 
