@@ -96,8 +96,6 @@ const MESSAGES = {
     "status.buildError": "製本に失敗しました（{message}）",
     "status.previewOpened": "プレビューを開きました（{size}）",
     "status.previewError": "プレビューに失敗しました（{message}）",
-
-    "footer.license": "GitHub（MIT License）",
   },
 
   en: {
@@ -183,8 +181,6 @@ const MESSAGES = {
     "status.buildError": "Binding failed ({message})",
     "status.previewOpened": "Opened the preview ({size})",
     "status.previewError": "Preview failed ({message})",
-
-    "footer.license": "GitHub (MIT License)",
   },
 };
 
